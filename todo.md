@@ -28,13 +28,15 @@
 - [ ] Βασικός BASIC loader (`SFC.BAS`) ή binary loader με `MEMORY` / `LOAD` / `CALL`
 
 ## M1 — Pipeline γραφικών (Aseprite / Blender → CPC)
-- [ ] Παλέτα CPC 27 χρωμάτων στο Aseprite (preset) + επιλογή των 16 χρωμάτων του παιχνιδιού (ανά world μπορεί να αλλάζει)
-- [ ] Converter (`tools/`, Python): PNG indexed → Mode 0 byte layout (2 pixels/byte, interleaved bits) + mask
-- [ ] Format sprite: 24x24 = 12 bytes x 24 γραμμές (+ mask ή transparent color)
-- [ ] Format tiles: π.χ. 8x8 ή 16x16 pixels, tileset + tilemap export
-- [ ] Blender: setup σκηνής (ορθογραφική κάμερα, flat/toon shading, χαμηλή ανάλυση render, χωρίς antialiasing)
-- [ ] Blender → render 8 γωνιών → Aseprite: quantize στην παλέτα CPC, χειροκίνητο cleanup
-- [ ] Ενσωμάτωση converter στο Makefile (αλλαγή στο gfx → αυτόματο rebuild)
+**Σε μεγάλο βαθμό έτοιμο: δες [assets/README.md](assets/README.md).**
+19,7 KB τέχνης για το Level 1, με επαληθευμένα δεδομένα και μακέτα οθόνης.
+- [x] Παλέτα 16 pens — **μία για τους δύο κόσμους**, όχι ανά world: το σκάφος, τα βλήματα, οι εκρήξεις και το HUD εμφανίζονται και στις οκτώ πίστες (`assets/palette.gpl`, `assets/data/palette.asm`)
+- [x] Κωδικοποιητής Mode 0 με αντίστροφο και ισχυρισμό σε όλες τις 256 τιμές (`assets/src/cpcimg.py`), μάσκα πλεγμένη `mask,data`
+- [x] Format sprite — **12x24 και όχι 24x24**: στο Mode 0 το pixel είναι διπλάσια φαρδύ, άρα 24x24 pixels = 48x24 μονάδες και ένα σκάφος που στρίβει δεν χωράει. Δες το σκεπτικό στο assets/README.md
+- [x] Format tiles: 8x8 **αδιαφανή** (32 bytes, `LDI`), 16 τύποι = ένα nibble
+- [ ] Αν θέλεις Aseprite/Blender για μεγάλα αντικείμενα (bosses 64x64+): το `palette.gpl` είναι έτοιμο preset
+- [ ] Ενσωμάτωση στο Makefile (αλλαγή στο `assets/src` → αυτόματο rebuild)
+- [ ] Blender: setup σκηνής μόνο για μεγάλα αντικείμενα — σε 12x24 pixels δεν υπάρχει τίποτα να μοντελοποιήσεις, κάθε pixel είναι απόφαση
 
 ## M2 — Engine core
 - [ ] Memory map 128K: δύο screen buffers (π.χ. `&C000` και `&4000`), code, bank switching (`&7Fxx`) για levels/γραφικά
@@ -46,7 +48,11 @@
 - [ ] Profiling: raster bars (αλλαγή border color) για μέτρηση χρόνου ανά υποσύστημα
 
 ## M3 — Multi-directional scrolling (τεχνική απόφαση + υλοποίηση)
-- [ ] Spike: hardware scroll (CRTC R12/R13, βήμα 4 pixel οριζόντια / 8 γραμμές κάθετα) vs software tile redraw vs υβριδικό
+**ΜΕΤΡΗΜΕΝΟ: το software redraw είναι ήδη εκτός.** Πλήρες ξαναζωγράφισμα
+20x18 πλακιδίων = 57,6 ms, δηλαδή **144 % του καρέ** στα 25 FPS, πριν μπει
+ένα μόνο sprite (`LDI` = 5 µs/byte στον CPC). Δες τον πίνακα στο
+[assets/README.md](assets/README.md).
+- [x] ~~Spike: hardware scroll vs software tile redraw~~ — το δεύτερο δεν χωράει· μένει hardware scroll με ξαναζωγράφισμα μόνο της νέας στήλης/γραμμής (20 πλακίδια = 3,2 ms) συν dirty tiles
 - [ ] Απόφαση για ομαλό scroll ανά 2 pixel (π.χ. δύο εκδόσεις tiles με offset, ή R3/R5 tricks για fine scroll)
 - [ ] Tilemap engine: σχεδίαση μόνο των νέων στηλών/γραμμών που εμφανίζονται
 - [ ] Διαχείριση wrap-around της video memory (όριο 16K / 2K CRTC)

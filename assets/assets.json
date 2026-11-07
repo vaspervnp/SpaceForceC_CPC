@@ -1,0 +1,2431 @@
+{
+ "ship": {
+  "title": "The Flying Patates",
+  "frames": 16,
+  "bytes": 4608,
+  "fixed_size": {
+   "w": 12,
+   "h": 24,
+   "masked": true
+  },
+  "items": [
+   {
+    "label": "ship_space_n",
+    "what": "σκάφος space, n",
+    "w": 12,
+    "h": 24,
+    "masked": true,
+    "screen_units": [
+     24,
+     24
+    ]
+   },
+   {
+    "label": "ship_space_ne",
+    "what": "σκάφος space, ne",
+    "w": 12,
+    "h": 24,
+    "masked": true,
+    "screen_units": [
+     24,
+     24
+    ]
+   },
+   {
+    "label": "ship_space_e",
+    "what": "σκάφος space, e",
+    "w": 12,
+    "h": 24,
+    "masked": true,
+    "screen_units": [
+     24,
+     24
+    ]
+   },
+   {
+    "label": "ship_space_se",
+    "what": "σκάφος space, se",
+    "w": 12,
+    "h": 24,
+    "masked": true,
+    "screen_units": [
+     24,
+     24
+    ]
+   },
+   {
+    "label": "ship_space_s",
+    "what": "σκάφος space, s",
+    "w": 12,
+    "h": 24,
+    "masked": true,
+    "screen_units": [
+     24,
+     24
+    ]
+   },
+   {
+    "label": "ship_space_sw",
+    "what": "σκάφος space, sw",
+    "w": 12,
+    "h": 24,
+    "masked": true,
+    "screen_units": [
+     24,
+     24
+    ]
+   },
+   {
+    "label": "ship_space_w",
+    "what": "σκάφος space, w",
+    "w": 12,
+    "h": 24,
+    "masked": true,
+    "screen_units": [
+     24,
+     24
+    ]
+   },
+   {
+    "label": "ship_space_nw",
+    "what": "σκάφος space, nw",
+    "w": 12,
+    "h": 24,
+    "masked": true,
+    "screen_units": [
+     24,
+     24
+    ]
+   },
+   {
+    "label": "ship_earth_n",
+    "what": "σκάφος earth, n",
+    "w": 12,
+    "h": 24,
+    "masked": true,
+    "screen_units": [
+     24,
+     24
+    ]
+   },
+   {
+    "label": "ship_earth_ne",
+    "what": "σκάφος earth, ne",
+    "w": 12,
+    "h": 24,
+    "masked": true,
+    "screen_units": [
+     24,
+     24
+    ]
+   },
+   {
+    "label": "ship_earth_e",
+    "what": "σκάφος earth, e",
+    "w": 12,
+    "h": 24,
+    "masked": true,
+    "screen_units": [
+     24,
+     24
+    ]
+   },
+   {
+    "label": "ship_earth_se",
+    "what": "σκάφος earth, se",
+    "w": 12,
+    "h": 24,
+    "masked": true,
+    "screen_units": [
+     24,
+     24
+    ]
+   },
+   {
+    "label": "ship_earth_s",
+    "what": "σκάφος earth, s",
+    "w": 12,
+    "h": 24,
+    "masked": true,
+    "screen_units": [
+     24,
+     24
+    ]
+   },
+   {
+    "label": "ship_earth_sw",
+    "what": "σκάφος earth, sw",
+    "w": 12,
+    "h": 24,
+    "masked": true,
+    "screen_units": [
+     24,
+     24
+    ]
+   },
+   {
+    "label": "ship_earth_w",
+    "what": "σκάφος earth, w",
+    "w": 12,
+    "h": 24,
+    "masked": true,
+    "screen_units": [
+     24,
+     24
+    ]
+   },
+   {
+    "label": "ship_earth_nw",
+    "what": "σκάφος earth, nw",
+    "w": 12,
+    "h": 24,
+    "masked": true,
+    "screen_units": [
+     24,
+     24
+    ]
+   }
+  ]
+ },
+ "fx": {
+  "title": "φλόγες, καπνός, εκρήξεις",
+  "frames": 35,
+  "bytes": 3552,
+  "fixed_size": null,
+  "items": [
+   {
+    "label": "fx_flame_n0",
+    "what": "φλόγα n φάση 0",
+    "w": 8,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     16,
+     8
+    ]
+   },
+   {
+    "label": "fx_flame_n1",
+    "what": "φλόγα n φάση 1",
+    "w": 8,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     16,
+     8
+    ]
+   },
+   {
+    "label": "fx_flame_n2",
+    "what": "φλόγα n φάση 2",
+    "w": 8,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     16,
+     8
+    ]
+   },
+   {
+    "label": "fx_flame_ne0",
+    "what": "φλόγα ne φάση 0",
+    "w": 8,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     16,
+     8
+    ]
+   },
+   {
+    "label": "fx_flame_ne1",
+    "what": "φλόγα ne φάση 1",
+    "w": 8,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     16,
+     8
+    ]
+   },
+   {
+    "label": "fx_flame_ne2",
+    "what": "φλόγα ne φάση 2",
+    "w": 8,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     16,
+     8
+    ]
+   },
+   {
+    "label": "fx_flame_e0",
+    "what": "φλόγα e φάση 0",
+    "w": 8,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     16,
+     8
+    ]
+   },
+   {
+    "label": "fx_flame_e1",
+    "what": "φλόγα e φάση 1",
+    "w": 8,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     16,
+     8
+    ]
+   },
+   {
+    "label": "fx_flame_e2",
+    "what": "φλόγα e φάση 2",
+    "w": 8,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     16,
+     8
+    ]
+   },
+   {
+    "label": "fx_flame_se0",
+    "what": "φλόγα se φάση 0",
+    "w": 8,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     16,
+     8
+    ]
+   },
+   {
+    "label": "fx_flame_se1",
+    "what": "φλόγα se φάση 1",
+    "w": 8,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     16,
+     8
+    ]
+   },
+   {
+    "label": "fx_flame_se2",
+    "what": "φλόγα se φάση 2",
+    "w": 8,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     16,
+     8
+    ]
+   },
+   {
+    "label": "fx_flame_s0",
+    "what": "φλόγα s φάση 0",
+    "w": 8,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     16,
+     8
+    ]
+   },
+   {
+    "label": "fx_flame_s1",
+    "what": "φλόγα s φάση 1",
+    "w": 8,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     16,
+     8
+    ]
+   },
+   {
+    "label": "fx_flame_s2",
+    "what": "φλόγα s φάση 2",
+    "w": 8,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     16,
+     8
+    ]
+   },
+   {
+    "label": "fx_flame_sw0",
+    "what": "φλόγα sw φάση 0",
+    "w": 8,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     16,
+     8
+    ]
+   },
+   {
+    "label": "fx_flame_sw1",
+    "what": "φλόγα sw φάση 1",
+    "w": 8,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     16,
+     8
+    ]
+   },
+   {
+    "label": "fx_flame_sw2",
+    "what": "φλόγα sw φάση 2",
+    "w": 8,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     16,
+     8
+    ]
+   },
+   {
+    "label": "fx_flame_w0",
+    "what": "φλόγα w φάση 0",
+    "w": 8,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     16,
+     8
+    ]
+   },
+   {
+    "label": "fx_flame_w1",
+    "what": "φλόγα w φάση 1",
+    "w": 8,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     16,
+     8
+    ]
+   },
+   {
+    "label": "fx_flame_w2",
+    "what": "φλόγα w φάση 2",
+    "w": 8,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     16,
+     8
+    ]
+   },
+   {
+    "label": "fx_flame_nw0",
+    "what": "φλόγα nw φάση 0",
+    "w": 8,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     16,
+     8
+    ]
+   },
+   {
+    "label": "fx_flame_nw1",
+    "what": "φλόγα nw φάση 1",
+    "w": 8,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     16,
+     8
+    ]
+   },
+   {
+    "label": "fx_flame_nw2",
+    "what": "φλόγα nw φάση 2",
+    "w": 8,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     16,
+     8
+    ]
+   },
+   {
+    "label": "fx_smoke0",
+    "what": "καπνός 0 (μόνο Γη)",
+    "w": 8,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     16,
+     8
+    ]
+   },
+   {
+    "label": "fx_smoke1",
+    "what": "καπνός 1 (μόνο Γη)",
+    "w": 8,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     16,
+     8
+    ]
+   },
+   {
+    "label": "fx_smoke2",
+    "what": "καπνός 2 (μόνο Γη)",
+    "w": 8,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     16,
+     8
+    ]
+   },
+   {
+    "label": "fx_booms0",
+    "what": "έκρηξη μικρή 0",
+    "w": 8,
+    "h": 16,
+    "masked": true,
+    "screen_units": [
+     16,
+     16
+    ]
+   },
+   {
+    "label": "fx_booms1",
+    "what": "έκρηξη μικρή 1",
+    "w": 8,
+    "h": 16,
+    "masked": true,
+    "screen_units": [
+     16,
+     16
+    ]
+   },
+   {
+    "label": "fx_booms2",
+    "what": "έκρηξη μικρή 2",
+    "w": 8,
+    "h": 16,
+    "masked": true,
+    "screen_units": [
+     16,
+     16
+    ]
+   },
+   {
+    "label": "fx_boomb0",
+    "what": "έκρηξη μεγάλη 0",
+    "w": 12,
+    "h": 24,
+    "masked": true,
+    "screen_units": [
+     24,
+     24
+    ]
+   },
+   {
+    "label": "fx_boomb1",
+    "what": "έκρηξη μεγάλη 1",
+    "w": 12,
+    "h": 24,
+    "masked": true,
+    "screen_units": [
+     24,
+     24
+    ]
+   },
+   {
+    "label": "fx_boomb2",
+    "what": "έκρηξη μεγάλη 2",
+    "w": 12,
+    "h": 24,
+    "masked": true,
+    "screen_units": [
+     24,
+     24
+    ]
+   },
+   {
+    "label": "fx_boomb3",
+    "what": "έκρηξη μεγάλη 3",
+    "w": 12,
+    "h": 24,
+    "masked": true,
+    "screen_units": [
+     24,
+     24
+    ]
+   },
+   {
+    "label": "fx_boomb4",
+    "what": "έκρηξη μεγάλη 4",
+    "w": 12,
+    "h": 24,
+    "masked": true,
+    "screen_units": [
+     24,
+     24
+    ]
+   }
+  ]
+ },
+ "shots": {
+  "title": "βλήματα παίκτη και εχθρών",
+  "frames": 46,
+  "bytes": 2944,
+  "fixed_size": {
+   "w": 8,
+   "h": 8,
+   "masked": true
+  },
+  "items": [
+   {
+    "label": "sh_disco_n0",
+    "what": "disco n φάση 0",
+    "w": 8,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     16,
+     8
+    ]
+   },
+   {
+    "label": "sh_disco_n1",
+    "what": "disco n φάση 1",
+    "w": 8,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     16,
+     8
+    ]
+   },
+   {
+    "label": "sh_disco_ne0",
+    "what": "disco ne φάση 0",
+    "w": 8,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     16,
+     8
+    ]
+   },
+   {
+    "label": "sh_disco_ne1",
+    "what": "disco ne φάση 1",
+    "w": 8,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     16,
+     8
+    ]
+   },
+   {
+    "label": "sh_disco_e0",
+    "what": "disco e φάση 0",
+    "w": 8,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     16,
+     8
+    ]
+   },
+   {
+    "label": "sh_disco_e1",
+    "what": "disco e φάση 1",
+    "w": 8,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     16,
+     8
+    ]
+   },
+   {
+    "label": "sh_disco_se0",
+    "what": "disco se φάση 0",
+    "w": 8,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     16,
+     8
+    ]
+   },
+   {
+    "label": "sh_disco_se1",
+    "what": "disco se φάση 1",
+    "w": 8,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     16,
+     8
+    ]
+   },
+   {
+    "label": "sh_disco_s0",
+    "what": "disco s φάση 0",
+    "w": 8,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     16,
+     8
+    ]
+   },
+   {
+    "label": "sh_disco_s1",
+    "what": "disco s φάση 1",
+    "w": 8,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     16,
+     8
+    ]
+   },
+   {
+    "label": "sh_disco_sw0",
+    "what": "disco sw φάση 0",
+    "w": 8,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     16,
+     8
+    ]
+   },
+   {
+    "label": "sh_disco_sw1",
+    "what": "disco sw φάση 1",
+    "w": 8,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     16,
+     8
+    ]
+   },
+   {
+    "label": "sh_disco_w0",
+    "what": "disco w φάση 0",
+    "w": 8,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     16,
+     8
+    ]
+   },
+   {
+    "label": "sh_disco_w1",
+    "what": "disco w φάση 1",
+    "w": 8,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     16,
+     8
+    ]
+   },
+   {
+    "label": "sh_disco_nw0",
+    "what": "disco nw φάση 0",
+    "w": 8,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     16,
+     8
+    ]
+   },
+   {
+    "label": "sh_disco_nw1",
+    "what": "disco nw φάση 1",
+    "w": 8,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     16,
+     8
+    ]
+   },
+   {
+    "label": "sh_baguette_n0",
+    "what": "baguette n φάση 0",
+    "w": 8,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     16,
+     8
+    ]
+   },
+   {
+    "label": "sh_baguette_ne0",
+    "what": "baguette ne φάση 0",
+    "w": 8,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     16,
+     8
+    ]
+   },
+   {
+    "label": "sh_baguette_e0",
+    "what": "baguette e φάση 0",
+    "w": 8,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     16,
+     8
+    ]
+   },
+   {
+    "label": "sh_baguette_se0",
+    "what": "baguette se φάση 0",
+    "w": 8,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     16,
+     8
+    ]
+   },
+   {
+    "label": "sh_baguette_s0",
+    "what": "baguette s φάση 0",
+    "w": 8,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     16,
+     8
+    ]
+   },
+   {
+    "label": "sh_baguette_sw0",
+    "what": "baguette sw φάση 0",
+    "w": 8,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     16,
+     8
+    ]
+   },
+   {
+    "label": "sh_baguette_w0",
+    "what": "baguette w φάση 0",
+    "w": 8,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     16,
+     8
+    ]
+   },
+   {
+    "label": "sh_baguette_nw0",
+    "what": "baguette nw φάση 0",
+    "w": 8,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     16,
+     8
+    ]
+   },
+   {
+    "label": "sh_spaghetti_n0",
+    "what": "spaghetti n φάση 0",
+    "w": 8,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     16,
+     8
+    ]
+   },
+   {
+    "label": "sh_spaghetti_ne0",
+    "what": "spaghetti ne φάση 0",
+    "w": 8,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     16,
+     8
+    ]
+   },
+   {
+    "label": "sh_spaghetti_e0",
+    "what": "spaghetti e φάση 0",
+    "w": 8,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     16,
+     8
+    ]
+   },
+   {
+    "label": "sh_spaghetti_se0",
+    "what": "spaghetti se φάση 0",
+    "w": 8,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     16,
+     8
+    ]
+   },
+   {
+    "label": "sh_spaghetti_s0",
+    "what": "spaghetti s φάση 0",
+    "w": 8,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     16,
+     8
+    ]
+   },
+   {
+    "label": "sh_spaghetti_sw0",
+    "what": "spaghetti sw φάση 0",
+    "w": 8,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     16,
+     8
+    ]
+   },
+   {
+    "label": "sh_spaghetti_w0",
+    "what": "spaghetti w φάση 0",
+    "w": 8,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     16,
+     8
+    ]
+   },
+   {
+    "label": "sh_spaghetti_nw0",
+    "what": "spaghetti nw φάση 0",
+    "w": 8,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     16,
+     8
+    ]
+   },
+   {
+    "label": "sh_torpedo_n0",
+    "what": "torpedo n φάση 0",
+    "w": 8,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     16,
+     8
+    ]
+   },
+   {
+    "label": "sh_torpedo_ne0",
+    "what": "torpedo ne φάση 0",
+    "w": 8,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     16,
+     8
+    ]
+   },
+   {
+    "label": "sh_torpedo_e0",
+    "what": "torpedo e φάση 0",
+    "w": 8,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     16,
+     8
+    ]
+   },
+   {
+    "label": "sh_torpedo_se0",
+    "what": "torpedo se φάση 0",
+    "w": 8,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     16,
+     8
+    ]
+   },
+   {
+    "label": "sh_torpedo_s0",
+    "what": "torpedo s φάση 0",
+    "w": 8,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     16,
+     8
+    ]
+   },
+   {
+    "label": "sh_torpedo_sw0",
+    "what": "torpedo sw φάση 0",
+    "w": 8,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     16,
+     8
+    ]
+   },
+   {
+    "label": "sh_torpedo_w0",
+    "what": "torpedo w φάση 0",
+    "w": 8,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     16,
+     8
+    ]
+   },
+   {
+    "label": "sh_torpedo_nw0",
+    "what": "torpedo nw φάση 0",
+    "w": 8,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     16,
+     8
+    ]
+   },
+   {
+    "label": "sh_sneeze0",
+    "what": "sneeze φάση 0",
+    "w": 8,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     16,
+     8
+    ]
+   },
+   {
+    "label": "sh_sneeze1",
+    "what": "sneeze φάση 1",
+    "w": 8,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     16,
+     8
+    ]
+   },
+   {
+    "label": "sh_sneeze2",
+    "what": "sneeze φάση 2",
+    "w": 8,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     16,
+     8
+    ]
+   },
+   {
+    "label": "sh_e90",
+    "what": "e9 φάση 0",
+    "w": 8,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     16,
+     8
+    ]
+   },
+   {
+    "label": "sh_e91",
+    "what": "e9 φάση 1",
+    "w": 8,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     16,
+     8
+    ]
+   },
+   {
+    "label": "sh_e92",
+    "what": "e9 φάση 2",
+    "w": 8,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     16,
+     8
+    ]
+   }
+  ]
+ },
+ "pickups": {
+  "title": "power-ups και μυρμήγκια",
+  "frames": 20,
+  "bytes": 2432,
+  "fixed_size": null,
+  "items": [
+   {
+    "label": "pu_shield",
+    "what": "Shield Bubble Wrap — ασπίδα· σπάει με «ποπ»",
+    "w": 8,
+    "h": 16,
+    "masked": true,
+    "screen_units": [
+     16,
+     16
+    ]
+   },
+   {
+    "label": "pu_shield_hi",
+    "what": "Shield Bubble Wrap, λάμψη",
+    "w": 8,
+    "h": 16,
+    "masked": true,
+    "screen_units": [
+     16,
+     16
+    ]
+   },
+   {
+    "label": "pu_espresso",
+    "what": "Espresso Boost — προσωρινή ταχύτητα· οι πιλότοι μιλάνε 3x πιο γρήγορα",
+    "w": 8,
+    "h": 16,
+    "masked": true,
+    "screen_units": [
+     16,
+     16
+    ]
+   },
+   {
+    "label": "pu_espresso_hi",
+    "what": "Espresso Boost, λάμψη",
+    "w": 8,
+    "h": 16,
+    "masked": true,
+    "screen_units": [
+     16,
+     16
+    ]
+   },
+   {
+    "label": "pu_magnet",
+    "what": "Ant-Magnet — τραβάει μόνο του τα μυρμήγκια",
+    "w": 8,
+    "h": 16,
+    "masked": true,
+    "screen_units": [
+     16,
+     16
+    ]
+   },
+   {
+    "label": "pu_magnet_hi",
+    "what": "Ant-Magnet, λάμψη",
+    "w": 8,
+    "h": 16,
+    "masked": true,
+    "screen_units": [
+     16,
+     16
+    ]
+   },
+   {
+    "label": "pu_engine",
+    "what": "Engine upgrade — μόνιμη αύξηση ταχύτητας",
+    "w": 8,
+    "h": 16,
+    "masked": true,
+    "screen_units": [
+     16,
+     16
+    ]
+   },
+   {
+    "label": "pu_engine_hi",
+    "what": "Engine upgrade, λάμψη",
+    "w": 8,
+    "h": 16,
+    "masked": true,
+    "screen_units": [
+     16,
+     16
+    ]
+   },
+   {
+    "label": "pu_disco",
+    "what": "Disco-Ray — όπλο: δέσμη neon, οι εχθροί χορεύουν ώσπου να σκάσουν",
+    "w": 8,
+    "h": 16,
+    "masked": true,
+    "screen_units": [
+     16,
+     16
+    ]
+   },
+   {
+    "label": "pu_disco_hi",
+    "what": "Disco-Ray, λάμψη",
+    "w": 8,
+    "h": 16,
+    "masked": true,
+    "screen_units": [
+     16,
+     16
+    ]
+   },
+   {
+    "label": "pu_baguette",
+    "what": "Mega-Baguette — όπλο: μπαγιάτικες μπαγκέτες που διαπερνούν ασπίδες",
+    "w": 8,
+    "h": 16,
+    "masked": true,
+    "screen_units": [
+     16,
+     16
+    ]
+   },
+   {
+    "label": "pu_baguette_hi",
+    "what": "Mega-Baguette, λάμψη",
+    "w": 8,
+    "h": 16,
+    "masked": true,
+    "screen_units": [
+     16,
+     16
+    ]
+   },
+   {
+    "label": "pu_sneeze",
+    "what": "Sneeze Cannon — όπλο: πράσινα σωματίδια με αντίκρουση",
+    "w": 8,
+    "h": 16,
+    "masked": true,
+    "screen_units": [
+     16,
+     16
+    ]
+   },
+   {
+    "label": "pu_sneeze_hi",
+    "what": "Sneeze Cannon, λάμψη",
+    "w": 8,
+    "h": 16,
+    "masked": true,
+    "screen_units": [
+     16,
+     16
+    ]
+   },
+   {
+    "label": "pu_spray",
+    "what": "Insecticide — αυτόματος ψεκαστήρας εναντίον των μυρμηγκο-εχθρών",
+    "w": 8,
+    "h": 16,
+    "masked": true,
+    "screen_units": [
+     16,
+     16
+    ]
+   },
+   {
+    "label": "pu_spray_hi",
+    "what": "Insecticide, λάμψη",
+    "w": 8,
+    "h": 16,
+    "masked": true,
+    "screen_units": [
+     16,
+     16
+    ]
+   },
+   {
+    "label": "pu_life",
+    "what": "Extra life — μία ζωή ακόμα για το Wing C",
+    "w": 8,
+    "h": 16,
+    "masked": true,
+    "screen_units": [
+     16,
+     16
+    ]
+   },
+   {
+    "label": "pu_life_hi",
+    "what": "Extra life, λάμψη",
+    "w": 8,
+    "h": 16,
+    "masked": true,
+    "screen_units": [
+     16,
+     16
+    ]
+   },
+   {
+    "label": "ant0",
+    "what": "κλεμμένο μυρμήγκι, καρέ 0",
+    "w": 8,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     16,
+     8
+    ]
+   },
+   {
+    "label": "ant1",
+    "what": "κλεμμένο μυρμήγκι, καρέ 1",
+    "w": 8,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     16,
+     8
+    ]
+   }
+  ]
+ },
+ "enemies": {
+  "title": "Katsarophobians και σκουπίδια",
+  "frames": 12,
+  "bytes": 2208,
+  "fixed_size": null,
+  "items": [
+   {
+    "label": "en_grunt0",
+    "what": "Katsarophobian — η μάζα του στρατού τους· πετάει σε σχηματισμούς",
+    "w": 8,
+    "h": 16,
+    "masked": true,
+    "screen_units": [
+     16,
+     16
+    ]
+   },
+   {
+    "label": "en_grunt1",
+    "what": "Katsarophobian — η μάζα του στρατού τους· πετάει σε σχηματισμούς",
+    "w": 8,
+    "h": 16,
+    "masked": true,
+    "screen_units": [
+     16,
+     16
+    ]
+   },
+   {
+    "label": "en_mine0",
+    "what": "νάρκη — δεν κινείται, σκάει στην επαφή",
+    "w": 8,
+    "h": 16,
+    "masked": true,
+    "screen_units": [
+     16,
+     16
+    ]
+   },
+   {
+    "label": "en_mine1",
+    "what": "νάρκη — δεν κινείται, σκάει στην επαφή",
+    "w": 8,
+    "h": 16,
+    "masked": true,
+    "screen_units": [
+     16,
+     16
+    ]
+   },
+   {
+    "label": "en_sock0",
+    "what": "χαμένη κάλτσα — αστεροειδής του level 1 — ό,τι έχασε η αποσκευή",
+    "w": 8,
+    "h": 16,
+    "masked": true,
+    "screen_units": [
+     16,
+     16
+    ]
+   },
+   {
+    "label": "en_sock1",
+    "what": "χαμένη κάλτσα — αστεροειδής του level 1 — ό,τι έχασε η αποσκευή",
+    "w": 8,
+    "h": 16,
+    "masked": true,
+    "screen_units": [
+     16,
+     16
+    ]
+   },
+   {
+    "label": "en_saucer0",
+    "what": "ιπτάμενος δίσκος — ρίχνει Laser Spaghetti σε τόξο",
+    "w": 12,
+    "h": 16,
+    "masked": true,
+    "screen_units": [
+     24,
+     16
+    ]
+   },
+   {
+    "label": "en_saucer1",
+    "what": "ιπτάμενος δίσκος — ρίχνει Laser Spaghetti σε τόξο",
+    "w": 12,
+    "h": 16,
+    "masked": true,
+    "screen_units": [
+     24,
+     16
+    ]
+   },
+   {
+    "label": "en_suitcase0",
+    "what": "χαμένη βαλίτσα — αστεροειδής του level 1 — αργός, αντέχει πολλά",
+    "w": 12,
+    "h": 20,
+    "masked": true,
+    "screen_units": [
+     24,
+     20
+    ]
+   },
+   {
+    "label": "en_suitcase1",
+    "what": "χαμένη βαλίτσα — αστεροειδής του level 1 — αργός, αντέχει πολλά",
+    "w": 12,
+    "h": 20,
+    "masked": true,
+    "screen_units": [
+     24,
+     20
+    ]
+   },
+   {
+    "label": "en_roach0",
+    "what": "διοικητής — κυνηγάει το σκάφος· αφήνει δύο μυρμήγκια",
+    "w": 12,
+    "h": 24,
+    "masked": true,
+    "screen_units": [
+     24,
+     24
+    ]
+   },
+   {
+    "label": "en_roach1",
+    "what": "διοικητής — κυνηγάει το σκάφος· αφήνει δύο μυρμήγκια",
+    "w": 12,
+    "h": 24,
+    "masked": true,
+    "screen_units": [
+     24,
+     24
+    ]
+   }
+  ]
+ },
+ "tiles": {
+  "title": "πλακίδια φόντου, κόσμος «διάστημα»",
+  "frames": 16,
+  "bytes": 512,
+  "fixed_size": {
+   "w": 8,
+   "h": 8,
+   "masked": false
+  },
+  "items": [
+   {
+    "label": "ti_void",
+    "what": "κενό (levels 1-4)",
+    "w": 8,
+    "h": 8,
+    "masked": false,
+    "screen_units": [
+     16,
+     8
+    ]
+   },
+   {
+    "label": "ti_star_s",
+    "what": "αστέρι μικρό (levels 1-4)",
+    "w": 8,
+    "h": 8,
+    "masked": false,
+    "screen_units": [
+     16,
+     8
+    ]
+   },
+   {
+    "label": "ti_star_m",
+    "what": "αστέρι μεγάλο (levels 1-4)",
+    "w": 8,
+    "h": 8,
+    "masked": false,
+    "screen_units": [
+     16,
+     8
+    ]
+   },
+   {
+    "label": "ti_stars_3",
+    "what": "αστερισμός (levels 1-4)",
+    "w": 8,
+    "h": 8,
+    "masked": false,
+    "screen_units": [
+     16,
+     8
+    ]
+   },
+   {
+    "label": "ti_dust",
+    "what": "σκόνη (levels 1,3)",
+    "w": 8,
+    "h": 8,
+    "masked": false,
+    "screen_units": [
+     16,
+     8
+    ]
+   },
+   {
+    "label": "ti_nebula_a",
+    "what": "νεφέλωμα αραιό (levels 2)",
+    "w": 8,
+    "h": 8,
+    "masked": false,
+    "screen_units": [
+     16,
+     8
+    ]
+   },
+   {
+    "label": "ti_nebula_b",
+    "what": "νεφέλωμα πυκνό (levels 2)",
+    "w": 8,
+    "h": 8,
+    "masked": false,
+    "screen_units": [
+     16,
+     8
+    ]
+   },
+   {
+    "label": "ti_nebula_c",
+    "what": "νεφέλωμα ροζ (levels 2)",
+    "w": 8,
+    "h": 8,
+    "masked": false,
+    "screen_units": [
+     16,
+     8
+    ]
+   },
+   {
+    "label": "ti_plate",
+    "what": "έλασμα σταθμού (levels 2,3)",
+    "w": 8,
+    "h": 8,
+    "masked": false,
+    "screen_units": [
+     16,
+     8
+    ]
+   },
+   {
+    "label": "ti_plate_rivet",
+    "what": "έλασμα με καρφιά (levels 2,3)",
+    "w": 8,
+    "h": 8,
+    "masked": false,
+    "screen_units": [
+     16,
+     8
+    ]
+   },
+   {
+    "label": "ti_grate",
+    "what": "σχάρα (levels 2,3)",
+    "w": 8,
+    "h": 8,
+    "masked": false,
+    "screen_units": [
+     16,
+     8
+    ]
+   },
+   {
+    "label": "ti_pipe",
+    "what": "σωλήνας (levels 3)",
+    "w": 8,
+    "h": 8,
+    "masked": false,
+    "screen_units": [
+     16,
+     8
+    ]
+   },
+   {
+    "label": "ti_moon",
+    "what": "σεληνιακό έδαφος (levels 4)",
+    "w": 8,
+    "h": 8,
+    "masked": false,
+    "screen_units": [
+     16,
+     8
+    ]
+   },
+   {
+    "label": "ti_moon_crater",
+    "what": "κρατήρας (levels 4)",
+    "w": 8,
+    "h": 8,
+    "masked": false,
+    "screen_units": [
+     16,
+     8
+    ]
+   },
+   {
+    "label": "ti_tunnel",
+    "what": "σήραγγα μυρμηγκιών (levels 4)",
+    "w": 8,
+    "h": 8,
+    "masked": false,
+    "screen_units": [
+     16,
+     8
+    ]
+   },
+   {
+    "label": "ti_trash",
+    "what": "σκουπίδια (levels 3)",
+    "w": 8,
+    "h": 8,
+    "masked": false,
+    "screen_units": [
+     16,
+     8
+    ]
+   }
+  ]
+ },
+ "boss1": {
+  "title": "Lord Garbage-Can (Level 1)",
+  "frames": 2,
+  "bytes": 2304,
+  "fixed_size": {
+   "w": 24,
+   "h": 48,
+   "masked": true
+  },
+  "items": [
+   {
+    "label": "boss1_closed",
+    "what": "καπάκι closed",
+    "w": 24,
+    "h": 48,
+    "masked": true,
+    "screen_units": [
+     48,
+     48
+    ]
+   },
+   {
+    "label": "boss1_open",
+    "what": "καπάκι open",
+    "w": 24,
+    "h": 48,
+    "masked": true,
+    "screen_units": [
+     48,
+     48
+    ]
+   }
+  ]
+ },
+ "font": {
+  "title": "γραμματοσειρά 4x8",
+  "frames": 49,
+  "bytes": 1568,
+  "fixed_size": {
+   "w": 4,
+   "h": 8,
+   "masked": true
+  },
+  "items": [
+   {
+    "label": "ch_48",
+    "what": "'0'",
+    "w": 4,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     8,
+     8
+    ]
+   },
+   {
+    "label": "ch_49",
+    "what": "'1'",
+    "w": 4,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     8,
+     8
+    ]
+   },
+   {
+    "label": "ch_50",
+    "what": "'2'",
+    "w": 4,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     8,
+     8
+    ]
+   },
+   {
+    "label": "ch_51",
+    "what": "'3'",
+    "w": 4,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     8,
+     8
+    ]
+   },
+   {
+    "label": "ch_52",
+    "what": "'4'",
+    "w": 4,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     8,
+     8
+    ]
+   },
+   {
+    "label": "ch_53",
+    "what": "'5'",
+    "w": 4,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     8,
+     8
+    ]
+   },
+   {
+    "label": "ch_54",
+    "what": "'6'",
+    "w": 4,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     8,
+     8
+    ]
+   },
+   {
+    "label": "ch_55",
+    "what": "'7'",
+    "w": 4,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     8,
+     8
+    ]
+   },
+   {
+    "label": "ch_56",
+    "what": "'8'",
+    "w": 4,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     8,
+     8
+    ]
+   },
+   {
+    "label": "ch_57",
+    "what": "'9'",
+    "w": 4,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     8,
+     8
+    ]
+   },
+   {
+    "label": "ch_65",
+    "what": "'A'",
+    "w": 4,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     8,
+     8
+    ]
+   },
+   {
+    "label": "ch_66",
+    "what": "'B'",
+    "w": 4,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     8,
+     8
+    ]
+   },
+   {
+    "label": "ch_67",
+    "what": "'C'",
+    "w": 4,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     8,
+     8
+    ]
+   },
+   {
+    "label": "ch_68",
+    "what": "'D'",
+    "w": 4,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     8,
+     8
+    ]
+   },
+   {
+    "label": "ch_69",
+    "what": "'E'",
+    "w": 4,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     8,
+     8
+    ]
+   },
+   {
+    "label": "ch_70",
+    "what": "'F'",
+    "w": 4,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     8,
+     8
+    ]
+   },
+   {
+    "label": "ch_71",
+    "what": "'G'",
+    "w": 4,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     8,
+     8
+    ]
+   },
+   {
+    "label": "ch_72",
+    "what": "'H'",
+    "w": 4,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     8,
+     8
+    ]
+   },
+   {
+    "label": "ch_73",
+    "what": "'I'",
+    "w": 4,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     8,
+     8
+    ]
+   },
+   {
+    "label": "ch_74",
+    "what": "'J'",
+    "w": 4,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     8,
+     8
+    ]
+   },
+   {
+    "label": "ch_75",
+    "what": "'K'",
+    "w": 4,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     8,
+     8
+    ]
+   },
+   {
+    "label": "ch_76",
+    "what": "'L'",
+    "w": 4,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     8,
+     8
+    ]
+   },
+   {
+    "label": "ch_77",
+    "what": "'M'",
+    "w": 4,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     8,
+     8
+    ]
+   },
+   {
+    "label": "ch_78",
+    "what": "'N'",
+    "w": 4,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     8,
+     8
+    ]
+   },
+   {
+    "label": "ch_79",
+    "what": "'O'",
+    "w": 4,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     8,
+     8
+    ]
+   },
+   {
+    "label": "ch_80",
+    "what": "'P'",
+    "w": 4,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     8,
+     8
+    ]
+   },
+   {
+    "label": "ch_81",
+    "what": "'Q'",
+    "w": 4,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     8,
+     8
+    ]
+   },
+   {
+    "label": "ch_82",
+    "what": "'R'",
+    "w": 4,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     8,
+     8
+    ]
+   },
+   {
+    "label": "ch_83",
+    "what": "'S'",
+    "w": 4,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     8,
+     8
+    ]
+   },
+   {
+    "label": "ch_84",
+    "what": "'T'",
+    "w": 4,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     8,
+     8
+    ]
+   },
+   {
+    "label": "ch_85",
+    "what": "'U'",
+    "w": 4,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     8,
+     8
+    ]
+   },
+   {
+    "label": "ch_86",
+    "what": "'V'",
+    "w": 4,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     8,
+     8
+    ]
+   },
+   {
+    "label": "ch_87",
+    "what": "'W'",
+    "w": 4,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     8,
+     8
+    ]
+   },
+   {
+    "label": "ch_88",
+    "what": "'X'",
+    "w": 4,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     8,
+     8
+    ]
+   },
+   {
+    "label": "ch_89",
+    "what": "'Y'",
+    "w": 4,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     8,
+     8
+    ]
+   },
+   {
+    "label": "ch_90",
+    "what": "'Z'",
+    "w": 4,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     8,
+     8
+    ]
+   },
+   {
+    "label": "ch_32",
+    "what": "'κενό'",
+    "w": 4,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     8,
+     8
+    ]
+   },
+   {
+    "label": "ch_46",
+    "what": "'.'",
+    "w": 4,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     8,
+     8
+    ]
+   },
+   {
+    "label": "ch_44",
+    "what": "','",
+    "w": 4,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     8,
+     8
+    ]
+   },
+   {
+    "label": "ch_58",
+    "what": "':'",
+    "w": 4,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     8,
+     8
+    ]
+   },
+   {
+    "label": "ch_45",
+    "what": "'-'",
+    "w": 4,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     8,
+     8
+    ]
+   },
+   {
+    "label": "ch_33",
+    "what": "'!'",
+    "w": 4,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     8,
+     8
+    ]
+   },
+   {
+    "label": "ch_63",
+    "what": "'?'",
+    "w": 4,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     8,
+     8
+    ]
+   },
+   {
+    "label": "ch_40",
+    "what": "'('",
+    "w": 4,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     8,
+     8
+    ]
+   },
+   {
+    "label": "ch_41",
+    "what": "')'",
+    "w": 4,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     8,
+     8
+    ]
+   },
+   {
+    "label": "ch_47",
+    "what": "'/'",
+    "w": 4,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     8,
+     8
+    ]
+   },
+   {
+    "label": "ch_37",
+    "what": "'%'",
+    "w": 4,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     8,
+     8
+    ]
+   },
+   {
+    "label": "ch_43",
+    "what": "'+'",
+    "w": 4,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     8,
+     8
+    ]
+   },
+   {
+    "label": "ch_42",
+    "what": "'*'",
+    "w": 4,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     8,
+     8
+    ]
+   }
+  ]
+ },
+ "_blit_budget_25fps": [
+  {
+   "what": "σκάφος",
+   "ms": 1.58,
+   "pct_of_frame": 4.0,
+   "note": "ένα, πάντα"
+  },
+  {
+   "what": "εχθρός 8x16",
+   "ms": 0.7,
+   "pct_of_frame": 1.8,
+   "note": "η μάζα"
+  },
+  {
+   "what": "εχθρός 12x24",
+   "ms": 1.58,
+   "pct_of_frame": 4.0,
+   "note": "διοικητής"
+  },
+  {
+   "what": "βλήμα 8x8",
+   "ms": 0.35,
+   "pct_of_frame": 0.9,
+   "note": "ώς 12 μαζί"
+  },
+  {
+   "what": "boss 24x48",
+   "ms": 6.34,
+   "pct_of_frame": 15.8,
+   "note": "ένα στο τέλος"
+  },
+  {
+   "what": "πλακίδιο 8x8",
+   "ms": 0.16,
+   "pct_of_frame": 0.4,
+   "note": "20x18 ανά οθόνη"
+  },
+  {
+   "what": "ΟΛΟ το φόντο",
+   "ms": 57.6,
+   "pct_of_frame": 144.0,
+   "note": "20x18 πλακίδια — ΔΕΝ ΧΩΡΑΕΙ ΣΕ ΚΑΡΕ"
+  }
+ ],
+ "_palette": [
+  {
+   "pen": 0,
+   "char": ".",
+   "firmware": 0,
+   "name": "Black",
+   "rgb": "#000000",
+   "use": "ΔΙΑΦΑΝΟ στα sprites, κενό διάστημα στα tiles"
+  },
+  {
+   "pen": 1,
+   "char": "K",
+   "firmware": 1,
+   "name": "Blue",
+   "rgb": "#000080",
+   "use": "περίγραμμα και βαθιά σκιά (περνάει για μαύρο)"
+  },
+  {
+   "pen": 2,
+   "char": "i",
+   "firmware": 13,
+   "name": "White",
+   "rgb": "#808080",
+   "use": "γκρι: μέταλλο, πέτρα, μάρμαρο σκιά"
+  },
+  {
+   "pen": 3,
+   "char": "I",
+   "firmware": 26,
+   "name": "Bright white",
+   "rgb": "#FFFFFF",
+   "use": "ανταύγεια, αστέρια, κείμενο"
+  },
+  {
+   "pen": 4,
+   "char": "d",
+   "firmware": 3,
+   "name": "Red",
+   "rgb": "#800000",
+   "use": "καφέ σκούρο: βαλίτσες, ρίζες, μυρμήγκια"
+  },
+  {
+   "pen": 5,
+   "char": "D",
+   "firmware": 15,
+   "name": "Orange",
+   "rgb": "#FF8000",
+   "use": "καφέ/πορτοκαλί: πτερύγια, σκουριά, φλόγα"
+  },
+  {
+   "pen": 6,
+   "char": "r",
+   "firmware": 6,
+   "name": "Bright red",
+   "rgb": "#FF0000",
+   "use": "κίνδυνος: εκρήξεις, σφραγίδα, boss"
+  },
+  {
+   "pen": 7,
+   "char": "y",
+   "firmware": 24,
+   "name": "Bright yellow",
+   "rgb": "#FFFF00",
+   "use": "πυρήνας φλόγας, χρυσό, μπαγκέτα"
+  },
+  {
+   "pen": 8,
+   "char": "S",
+   "firmware": 25,
+   "name": "Pastel yellow",
+   "rgb": "#FFFF80",
+   "use": "ΤΟ ΣΩΜΑ ΤΟΥ ΠΛΟΙΟΥ — πατάτα, κρεμ, μάρμαρο"
+  },
+  {
+   "pen": 9,
+   "char": "c",
+   "firmware": 20,
+   "name": "Bright cyan",
+   "rgb": "#00FFFF",
+   "use": "θόλος πιλοτηρίου, ενέργεια, πάγος"
+  },
+  {
+   "pen": 10,
+   "char": "b",
+   "firmware": 11,
+   "name": "Sky blue",
+   "rgb": "#0080FF",
+   "use": "ψυχρό μέταλλο, ουρανός της Γης"
+  },
+  {
+   "pen": 11,
+   "char": "m",
+   "firmware": 8,
+   "name": "Bright magenta",
+   "rgb": "#FF00FF",
+   "use": "neon του Disco-Ray, λάμψη power-up"
+  },
+  {
+   "pen": 12,
+   "char": "p",
+   "firmware": 16,
+   "name": "Pink",
+   "rgb": "#FF8080",
+   "use": "έντυπα Ε9, σάρκα, τουρίστες"
+  },
+  {
+   "pen": 13,
+   "char": "n",
+   "firmware": 9,
+   "name": "Green",
+   "rgb": "#008000",
+   "use": "πράσινο σκούρο: εξωγήινοι σκιά, βλάστηση"
+  },
+  {
+   "pen": 14,
+   "char": "g",
+   "firmware": 18,
+   "name": "Bright green",
+   "rgb": "#00FF00",
+   "use": "πράσινο φωτεινό: φτάρνισμα, εξωγήινοι"
+  },
+  {
+   "pen": 15,
+   "char": "o",
+   "firmware": 12,
+   "name": "Yellow",
+   "rgb": "#808000",
+   "use": "λαδί: σκουπίδια, σπαγγέτι, βρόμικο μέταλλο"
+  }
+ ],
+ "_mode0": {
+  "screen_px": [
+   160,
+   200
+  ],
+  "screen_units": [
+   320,
+   200
+  ],
+  "pixel_aspect": "2:1 — ένα pixel είναι διπλάσια φαρδύ από ψηλό",
+  "bytes_per_line": 80,
+  "pixels_per_byte": 2,
+  "move_2px": "κίνηση ανά 2 pixel = 1 byte, άρα ΟΛΑ τα blits είναι byte-aligned και δεν χρειάζονται προ-μετατοπισμένα αντίγραφα"
+ },
+ "_total_bytes": 20128
+}
