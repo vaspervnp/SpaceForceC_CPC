@@ -8,9 +8,9 @@
 | Εργαλείο | Χρήση |
 |---|---|
 | `rasm` (v3.2.5, `/usr/local/bin/rasm`) | Assembler Z80, crunchers (ZX0/Shrinkler κλπ), `BUILDSNA` για γρήγορο testing |
-| `iDSK` (v0.20, `/usr/local/bin/iDSK`) | Δημιουργία/διαχείριση DSK, εισαγωγή αρχείων με AMSDOS header (`-n`, `-i`, `-t 1 -c -e`) |
+| `iDSK` (v0.20, `/usr/local/bin/iDSK`) | Προσθήκη αρχείων και έλεγχος της δισκέτας (η δισκέτα δημιουργείται από το rasm, δες M0) |
 | Extended DSK (EDSK) | Τελικό format δισκέτας (`SpaceForceC.dsk`) |
-| Caprice32 (snap, `caprice32.launcher`) | Κύριος emulator για testing/debug |
+| Caprice32 (snap, μέσω `tools/cap32.sh`) | Κύριος emulator για testing/debug |
 | CPCemu | Δεύτερος emulator για cross-check (δεν βρέθηκε στο PATH — να επιβεβαιωθεί η εντολή εκκίνησης) |
 | Aseprite MCP | Pixel art: sprites, tiles, fonts, HUD, οθόνες, με παλέτα CPC |
 | Blender MCP | 3D μοντέλα (πλοίο, bosses, asteroids) → render σε πολλές γωνίες → βάση για τα sprites στο Aseprite |
@@ -18,14 +18,20 @@
 ---
 
 ## M0 — Υποδομή project & build pipeline
-- [ ] Δομή φακέλων: `src/`, `gfx/` (πηγές Aseprite/Blender), `data/` (εξαγόμενα binaries), `tools/`, `build/`
-- [ ] `.gitignore` (build/, `*:Zone.Identifier`, temp αρχεία)
-- [ ] `Makefile`: `make` → rasm → binaries → iDSK → `build/SpaceForceC.dsk`
-- [ ] Επιβεβαίωση ότι το παραγόμενο DSK είναι **Extended DSK** (header `EXTENDED CPC DSK File`); αν το iDSK γράφει standard, χρήση του rasm `SAVE ...,DSK,...` (γράφει EDSK) ή script μετατροπής
-- [ ] `make run` → Caprice32 με autorun (`run"SFC`), `make snap` → rasm `BUILDSNA` για άμεσο load χωρίς δισκέτα
-- [ ] `make run-cpcemu` για cross-check
-- [ ] Hello world: Mode 0, ορισμός παλέτας, εμφάνιση ενός pixel/byte στην οθόνη, εκκίνηση από δισκέτα
-- [ ] Βασικός BASIC loader (`SFC.BAS`) ή binary loader με `MEMORY` / `LOAD` / `CALL`
+**Έγινε.** `make` → `build/SpaceForceC.dsk`, `make shot` → screenshot από Caprice32.
+- [x] Δομή φακέλων: `src/` (Z80), `assets/` (τέχνη και δεδομένα, από το M1), `tools/` (scripts), `build/` (εκτός git)
+- [x] `.gitignore` (build/, `*:Zone.Identifier`)
+- [x] `Makefile`: `make` → rasm → EDSK → iDSK (loader + έλεγχος)
+- [x] **Extended DSK**: το iDSK v0.20 γράφει μόνο standard (`MV - CPCEMU`) σε νέα δισκέτα. Τη δισκέτα τη δημιουργεί το rasm (`save ...,DSK,...`) σε EDSK με AMSDOS header· το iDSK προσθέτει αρχεία **κρατώντας** το EDSK. Το Makefile ελέγχει το header σε κάθε build
+- [x] `make run` → Caprice32 με autorun (`run"disc`), `make snap` / `make run-snap` → snapshot. Το rasm θέλει `-v2`: το Caprice32 4.6 απορρίπτει το v3 snapshot του rasm («zero size»)
+- [x] `make shot` → Caprice32 χωρίς παράθυρο, `build/screenshot.png` (`tools/cap32_shot.sh`)
+- [x] Hello world (`src/main.asm`): Mode 0, παλέτα μέσω gate array, φόντο από πλακίδια, οι 16 όψεις του σκάφους, κείμενο με τη γραμματοσειρά, περιστρεφόμενο σκάφος πάνω από το φόντο στα 25 FPS
+- [x] Loader: `DISC.BAS` (`RUN"SFC.BIN"`)· το `SFC.BIN` φορτώνει και ξεκινάει στο `&1000`
+- [ ] `make run-cpcemu`: ο στόχος υπάρχει, αλλά το CPCemu δεν βρέθηκε στο PATH (`make run-cpcemu CPCEMU=/path/to/cpcemu`)
+
+Ευρήματα για το Caprice32 του snap:
+- Ο `caprice32.launcher` περνάει μόνο τα δύο πρώτα ορίσματα ως δισκέτες και **πετάει** τα `-O`/`-a`. Το `tools/cap32.sh` καλεί το `cap32` απευθείας μέσα στο snap
+- Το autotype (`-a`) περιμένει να **διαβαστεί** το πληκτρολόγιο. Ένα πρόγραμμα που κλείνει το firmware και δεν διαβάζει πλήκτρα το παγώνει, άρα και το screenshot. Γι' αυτό το `read_keys` τρέχει σε κάθε καρέ από τώρα
 
 ## M1 — Pipeline γραφικών (Aseprite / Blender → CPC)
 **Σε μεγάλο βαθμό έτοιμο: δες [assets/README.md](assets/README.md).**

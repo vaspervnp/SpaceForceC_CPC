@@ -6,8 +6,8 @@ Arcade multi-directional scrolling shooter για τον **Amstrad CPC 6128** σ
 
 ## Κατάσταση
 
-Σε φάση σχεδιασμού. Δεν υπάρχει ακόμα κώδικας — υπάρχουν όμως **τα γραφικά
-του Level 1**, έτοιμα για `rasm`.
+Το M0 (build pipeline) έχει γίνει: το `src/main.asm` είναι ένα hello world
+που δείχνει τα γραφικά του Level 1 σε Mode 0 και τρέχει από Extended DSK.
 
 - [design_document.md](design_document.md): το game design document
 - [todo.md](todo.md): τα milestones της ανάπτυξης
@@ -46,4 +46,18 @@ python3 assets/src/make_assets.py
 
 ## Build
 
-Θα προστεθεί με το milestone M0 (`Makefile`, παραγωγή του `build/SpaceForceC.dsk`).
+```bash
+make
+```
+
+Βγάζει το `build/SpaceForceC.dsk` (Extended DSK). Στον CPC ή σε emulator: `RUN"DISC`.
+
+| στόχος | τι κάνει |
+|---|---|
+| `make run` | Caprice32 με τη δισκέτα και autorun |
+| `make snap` / `make run-snap` | snapshot (`build/sfc.sna`) που ξεκινάει κατευθείαν |
+| `make shot` | Caprice32 χωρίς παράθυρο, γράφει `build/screenshot.png` |
+| `make run-cpcemu` | CPCemu (`CPCEMU=/path/to/cpcemu` αν δεν είναι στο PATH) |
+| `make assets` | ξαναπαράγει τα `assets/data` από τα `assets/src` |
+
+Το Caprice32 είναι το snap package. Καλείται μέσω του `tools/cap32.sh`, γιατί ο `caprice32.launcher` πετάει τις επιλογές της γραμμής εντολών.
