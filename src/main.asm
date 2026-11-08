@@ -1,10 +1,11 @@
-; main.asm — Space Force C, M3: multi-directional scrolling + HUD
+; main.asm — Space Force C, M4: sprite engine
 ;
 ; Το σκάφος κινείται με κέρσορες / QAOP / joystick σε χάρτη 64x48
 ; πλακιδίων (4 οθόνες επί 2) και η κάμερα το ακολουθεί με hardware scroll
 ; (scroll.asm), σε double buffering, κλειδωμένο στα 25 FPS. Από κάτω, HUD
-; σε split screen (hw.asm, screen.asm). Fire (Space / joystick) αλλάζει
-; κόσμο (space <-> earth), ESC = παύση.
+; σε split screen (hw.asm, screen.asm). 10 εχθροί κινούνται στον κόσμο
+; (actors.asm) ως sprites με clip και save-under (sprites.asm). Fire
+; (Space / joystick) αλλάζει κόσμο (space <-> earth), ESC = παύση.
 ; Με make PROFILE=1 το border δείχνει τον χρόνο κάθε φάσης (hw.asm).
 ;
 ; Memory map (RAM config C0 σε όλο το παιχνίδι, εκτός από τις προσβάσεις
@@ -12,10 +13,13 @@
 ;   #0000-#003F  vectors (IM 1: JP int_handler στο #38)
 ;   #0040-#0FFF  stack (από το #1000 προς τα κάτω)
 ;   #1000-#3FFF  κώδικας + μόνιμα δεδομένα (12K)
-;   #4000-#7FFF  παράθυρο banks: εδώ μπαίνει (#7FC4-#7FC7) ένα από τα 4
-;                επιπλέον 16K του 6128, για τα δεδομένα των levels.
-;                Στη φυσική μνήμη (C0): το HUD στα #x6C0-#x7FF κάθε
-;                block των 2K, τα μισά πλακίδια στο #4000-#41FF.
+;   #4000-#7FFF  παράθυρο banks. Δύο ρυθμίσεις μνήμης:
+;                C4 (RAM_WORLD, σχεδόν πάντα): το bank 4 = ο κόσμος
+;                  #4000 χάρτης (3K), #4C00 μισά πλακίδια (512),
+;                  #4E00- GFX4.BIN: πλακίδια, σκάφος (και ό,τι μπει)
+;                C0 (RAM_HUD, μόνο όσο γράφεται το HUD): η φυσική
+;                  σελίδα, με το HUD στα #x6C0-#x7FF κάθε block των 2K
+;                Το DISC.BAS φορτώνει το GFX4.BIN κατευθείαν στο bank 4.
 ;   #8000-#BFFF  οθόνη, σελίδα 2
 ;   #C000-#FFFF  οθόνη, σελίδα 3
 
@@ -27,7 +31,7 @@
         org #1000
         run start
 
-        include "profile.asm"
+        include "macros.asm"
 
 STACK_TOP       equ #1000
 PPI_B           equ #F5         ; PPI port B: bit 0 = VSYNC
@@ -55,13 +59,18 @@ start:
         ld bc,#7F00+GA_MODE0
         out (c),c
         call install_interrupts ; πριν από όλα: το copy_half κάνει EI
+        RAM_WORLD
         call set_palette
         call make_row40
         call make_halftiles
         call make_map
+        call init_actors
+        call update_actors
 
+        RAM_HUD
         call clear_hud
         call draw_hud_static
+        RAM_WORLD
 
         ; και οι δύο σελίδες ξεκινούν με όλη την κάμερα ζωγραφισμένη
         ld a,#C0
@@ -103,26 +112,17 @@ main_loop:
 .nofire:
         call move_ship
         call update_camera
+        call update_actors
         call page_buf           ; IX = η σελίδα που ζωγραφίζουμε
 
         PROFILE_BORDER HW_BRIGHT_BLUE   ; σβήσιμο (με την παλιά κάμερα)
-        ld c,(ix+BUF_OX)
-        ld l,(ix+BUF_OY)
-        ld h,(ix+BUF_OY+1)
-        ld d,SHIP_H
-        ld e,SHIP_W
-        call restore_world_rect
+        call sprites_restore
 
         PROFILE_BORDER HW_MAGENTA       ; scroll: στήλες/σειρές που μπαίνουν
         call scroll_buffer
 
         PROFILE_BORDER HW_RED           ; sprites
-        call draw_ship
-        ld a,(ship_x)
-        ld (ix+BUF_OX),a
-        ld hl,(ship_y)
-        ld (ix+BUF_OY),l
-        ld (ix+BUF_OY+1),h
+        call sprites_draw
 
         ld a,(cam_x)
         ld c,a
@@ -138,7 +138,11 @@ main_loop:
         PROFILE_BORDER HW_YELLOW        ; HUD: μία φορά ανά 16 καρέ
         ld a,(frames)
         and 15
-        call z,draw_hud
+        jr nz,.nohud
+        RAM_HUD
+        call draw_hud
+        RAM_WORLD
+.nohud:
 
         PROFILE_BORDER HW_BLACK         ; αναμονή για το VSYNC
         call flip
@@ -155,11 +159,18 @@ init_page:
         ld (ix+BUF_CX),a
         ld a,(cam_y)
         ld (ix+BUF_CY),a
-        ld a,(ship_x)
-        ld (ix+BUF_OX),a
-        ld hl,(ship_y)
-        ld (ix+BUF_OY),l
-        ld (ix+BUF_OY+1),h
+        ld (ix+BUF_NREC),0
+        ld hl,recs0
+        ld de,save0
+        ld a,(draw_page)
+        cp #C0
+        jr nz,.p80
+        ld hl,recs1
+        ld de,save1
+.p80:   ld (ix+BUF_RECS),l
+        ld (ix+BUF_RECS+1),h
+        ld (ix+BUF_SAVE),e
+        ld (ix+BUF_SAVE+1),d
         jp draw_view
 
 draw_hud_static:
@@ -186,7 +197,7 @@ draw_hud:
         ld c,50
         jp print_u16
 
-txt_title:  db "SPACE FORCE C - M3 SCROLL + HUD",0
+txt_title:  db "SPACE FORCE C - M4 SPRITES",0
 txt_frames: db "FRAMES",0
 txt_late:   db "LATE",0
 
@@ -304,24 +315,6 @@ update_camera:
         ld (cam_y),a
         ret
 
-draw_ship:
-        ld a,(ship_dir)
-        ld hl,ship_world
-        add a,(hl)
-        ld hl,ship_gfx
-        ld de,SHIP_SZ
-        or a
-        jr z,.got
-.mul:   add hl,de
-        dec a
-        jr nz,.mul
-.got:   ld a,(ship_x)
-        ld c,a
-        ld de,(ship_y)
-        ld b,SHIP_H
-        ld a,SHIP_W
-        jp blit_world
-
 ; input & 15 (U=1 D=2 L=4 R=8) -> ship_space_*, #FF = κράτα την παλιά
 dir_table:
         db #FF                  ; -
@@ -348,13 +341,13 @@ dir_table:
         include "screen.asm"
         include "scroll.asm"
         include "map.asm"
+        include "sprites.asm"
+        include "actors.asm"
         include "text.asm"
 
 ; Γραφικά (assets/data, παράγονται από assets/src/make_assets.py)
         include "../assets/data/palette.asm"
-        include "../assets/data/ship.asm"
-        include "../assets/data/tiles.asm"
-        include "../assets/data/font.asm"
+        include "../assets/data/font.asm"      ; το HUD γράφεται σε C0
 
 ;------------------------------------------------------------------
 ; Μεταβλητές με αρχική τιμή
@@ -378,9 +371,23 @@ game_r12:    db #20
 game_r13:    db 0
 frames:      dw 0
 late_frames: dw 0
-bw_x:        db 0               ; blit_world
-bw_y:        dw 0
-bw_h:        db 0
+sp_x:        db 0               ; sprites.asm: το τρέχον sprite μετά το clip
+sp_y:        dw 0
+sp_w:        db 0
+sp_h:        db 0
+sp_skip:     db 0
+sp_left:     db 0
+sp_right:    db 0
+sp_top:      db 0
+sp_src:      dw 0
+sp_cur:      dw 0
+sp_vy0:      dw 0
+sp_vyl:      dw 0
+sp_ylast:    dw 0
+line_y:      dw 0
+line_n:      db 0
+save_ptr:    dw 0
+rec_ptr:     dw 0
 rect_x:      db 0               ; fill_map_rect
 rect_y:      db 0
 rect_w:      db 0
@@ -394,11 +401,39 @@ code_end:
 
 row40       equ code_end                ; MAP_H x dw
 keymap      equ row40+2*MAP_H           ; 10 bytes
-bg_map      equ (keymap+10+255)&#FF00   ; MAP_W*MAP_H, στοιχισμένο σε 256
-ram_end     equ bg_map+MAP_W*MAP_H
-halftiles   equ #4000                   ; 512 bytes, στη φυσική μνήμη (C0)
+spr_table   equ keymap+10               ; SPR_MAX x SPR_SIZE
+enemies     equ spr_table+SPR_MAX*SPR_SIZE      ; ENEMY_N x EN_SIZE
+recs0       equ enemies+ENEMY_N*EN_SIZE ; εγγραφές sprites, σελίδα #80
+recs1       equ recs0+SPR_MAX*REC_SIZE  ; σελίδα #C0
+save0       equ recs1+SPR_MAX*REC_SIZE  ; bytes κάτω από τα sprites, #80
+save1       equ save0+SAVE_SIZE         ; #C0
+ram_end     equ save1+SAVE_SIZE
 
         assert ram_end <= #4000, "code + data overflow into the bank window"
+
+;------------------------------------------------------------------
+; Bank 4 (RAM_WORLD, στο #4000-#7FFF)
+;------------------------------------------------------------------
+
+bg_map      equ #4000                   ; MAP_W*MAP_H, στοιχισμένο σε 256
+halftiles   equ #4C00                   ; 512, στοιχισμένο σε 256
+GFX4_START  equ #4E00
+
+        ifdef SNAPSHOT
+        bank 4                  ; το rasm ξεκινάει το bank από το πρώτο org του
+        org #4000
+        ds GFX4_START-#4000
+        endif
+        org GFX4_START
+gfx4_data:
+        include "../assets/data/tiles.asm"
+        include "../assets/data/ship.asm"
+        include "../assets/data/enemies.asm"
+gfx4_end:
+
+        assert bg_map+MAP_W*MAP_H <= halftiles, "map overlaps halftiles"
+        assert halftiles+512 <= GFX4_START, "halftiles overlap GFX4"
+        assert gfx4_end <= #8000, "bank 4 is full"
 
 ; Το rasm γράφει το αρχείο κατευθείαν σε Extended DSK, με AMSDOS header
 ; (load = exec = #1000 από το RUN). Η διαδρομή είναι ως προς τη ρίζα του
@@ -406,4 +441,5 @@ halftiles   equ #4000                   ; 512 bytes, στη φυσική μνή�
 ; αυτό snapshot (.sna) που ξεκινάει κατευθείαν στο start.
         ifndef SNAPSHOT
         save "SFC.BIN",#1000,code_end-#1000,DSK,"build/SpaceForceC.dsk"
+        save "GFX4.BIN",gfx4_data,gfx4_end-gfx4_data,DSK,"build/SpaceForceC.dsk"
         endif

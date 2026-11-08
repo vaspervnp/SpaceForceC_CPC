@@ -30,12 +30,14 @@ CAM_MAX_Y       equ MAP_H-VIEW_H
 WORLD_W         equ MAP_W*TILES_W       ; 256 bytes
 WORLD_H         equ MAP_H*TILES_H       ; 384 γραμμές
 
-; Κατάσταση ανά σελίδα (IX): κάμερα όταν ζωγραφίστηκε + πού ήταν το σκάφος.
+; Κατάσταση ανά σελίδα (IX): η κάμερα όταν ζωγραφίστηκε και τα sprites της
+; (sprites.asm).
 BUF_CX          equ 0           ; κάμερα, words
 BUF_CY          equ 1           ; κάμερα, σειρές
-BUF_OX          equ 2           ; σκάφος, world X (bytes)
-BUF_OY          equ 3           ; σκάφος, world Y (γραμμές, 16-bit)
-BUF_SIZE        equ 5
+BUF_NREC        equ 2           ; πόσα sprites ζωγραφίστηκαν
+BUF_RECS        equ 3           ; οι εγγραφές τους (dw)
+BUF_SAVE        equ 5           ; τα σωσμένα bytes (dw)
+BUF_SIZE        equ 7
 
 ; row40[wy] = (wy*40) mod 1024
 make_row40:
@@ -351,161 +353,3 @@ scroll_buffer:
         ld c,(ix+BUF_CX)
         call draw_row
         jr .vert
-
-; Ξαναζωγραφίζει το φόντο κάτω από ένα ορθογώνιο του κόσμου, μόνο όσα
-; κελιά είναι μέσα στην κάμερα της σελίδας IX.
-; in: C = X (bytes), HL = Y (γραμμές), D = ύψος, E = πλάτος (bytes)
-restore_world_rect:
-        ; στήλες: X/2 .. (X+w-1)/2, κομμένες στο [cx, cx+39]
-        ld a,c
-        add a,e
-        dec a
-        srl a
-        ld b,a                  ; B = τελευταία στήλη
-        ld a,(ix+BUF_CX)
-        add a,VIEW_W-1
-        cp b
-        jr nc,$+3
-        ld b,a
-        ld a,b
-        ld (.lastcol+1),a
-        srl c                   ; C = πρώτη στήλη
-        ld a,(ix+BUF_CX)
-        cp c
-        jr c,$+3
-        ld c,a
-        ld a,c
-        ld (.firstcol+1),a
-        ld a,b
-        cp c
-        ret c                   ; κενό
-        ; σειρές: Y/8 .. (Y+h-1)/8, κομμένες στο [cy, cy+24]
-        push hl
-        ld e,d
-        dec e
-        ld d,0
-        add hl,de               ; Y + h - 1
-        srl h
-        rr l
-        srl h
-        rr l
-        srl h
-        rr l
-        ld b,l                  ; B = τελευταία σειρά
-        pop hl
-        srl h
-        rr l
-        srl h
-        rr l
-        srl h
-        rr l                    ; L = πρώτη σειρά
-        ld a,(ix+BUF_CY)
-        add a,VIEW_H-1
-        cp b
-        jr nc,$+3
-        ld b,a
-        ld a,b
-        ld (.lastrow+1),a
-        ld a,(ix+BUF_CY)
-        cp l
-        jr c,$+3
-        ld l,a
-        ld a,b
-        cp l
-        ret c
-        ld b,l
-.row:
-.firstcol:
-        ld c,0
-.cell:  call draw_halftile
-        ld a,c
-        inc c
-.lastcol:
-        cp 0
-        jr nz,.cell
-        ld a,b
-        inc b
-.lastrow:
-        cp 0
-        jr nz,.row
-        ret
-
-;------------------------------------------------------------------
-; Sprites στον κόσμο
-;------------------------------------------------------------------
-
-; Masked sprite σε συντεταγμένες κόσμου. Μια γραμμή του sprite μπορεί να
-; περάσει το όριο των 2K του δαχτυλιδιού: τότε (σπάνια) ο αργός δρόμος
-; διορθώνει τη διεύθυνση byte-byte.
-; in: HL = γραφικό, C = X, DE = Y, B = ύψος, A = bytes δεδομένων/γραμμή
-blit_world:
-        ld (.wf+1),a
-        ld (.ws+1),a
-        ld (.wc+1),a
-        ld a,b
-        ld (bw_h),a
-        ld a,c
-        ld (bw_x),a
-        ld (bw_y),de
-        push hl
-        ex de,hl                ; HL = Y
-        call world_addr         ; DE = οθόνη
-        pop hl                  ; HL = γραφικό
-.line:  ; Περνάει η γραμμή το #x7FF; Μόνο αν είμαστε στο τελευταίο 256άρι
-        ; του block (D & 7 = 7) και το E + πλάτος κρατάει.
-        push de
-        ld a,d
-        and 7
-        cp 7
-        jr nz,.fast
-        ld a,e
-.wc:    add a,0
-        jr c,.slow
-.fast:
-.wf:    ld b,0
-.fpx:   ld a,(de)
-        and (hl)
-        inc hl
-        or (hl)
-        inc hl
-        ld (de),a
-        inc de
-        djnz .fpx
-        jr .next
-.slow:
-.ws:    ld b,0
-.spx:   ld a,(de)
-        and (hl)
-        inc hl
-        or (hl)
-        inc hl
-        ld (de),a
-        inc e
-        jr nz,.sok
-        ld a,d                  ; #x7FF -> #x000 του ίδιου block
-        sub 7
-        ld d,a
-.sok:   djnz .spx
-.next:  pop de
-        ld a,(bw_h)
-        dec a
-        ret z
-        ld (bw_h),a
-        push hl
-        ld hl,(bw_y)
-        inc hl
-        ld (bw_y),hl
-        ld a,l
-        and 7
-        jr z,.newrow
-        pop hl
-        ld a,d                  ; ίδια σειρά: επόμενη γραμμή = +#800
-        add a,8
-        ld d,a
-        jr .line
-.newrow:
-        ld a,(bw_x)             ; νέα σειρά: άλλο MA
-        ld c,a
-        call world_addr
-        pop hl
-        jr .line

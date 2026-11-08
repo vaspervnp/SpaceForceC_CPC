@@ -2,6 +2,9 @@
 
 GA_MODE0        equ #8C         ; gate array: mode 0, upper + lower ROM off
 GA_RAM_C0       equ #C0         ; RAM config 0: τα 64K της κύριας μνήμης
+GA_RAM_C4       equ #C4         ; RAM config 4: bank 4 στο #4000-#7FFF
+
+
 FRAME_VBLS      equ 2           ; 50 Hz / 2 = 25 FPS
 
 ;------------------------------------------------------------------
@@ -24,9 +27,12 @@ FRAME_VBLS      equ 2           ; 50 Hz / 2 = 25 FPS
 ;                       αργά: η εικόνα σβήνει στη σειρά 4 ως το επόμενο καρέ.
 ;   int_idx 2  γρ.  34  μέσα στο A: R4 = 20 (το A τελειώνει στη σειρά 20),
 ;                       R7 = 127 (χωρίς VSYNC), R12/R13 = HUD -> στην αρχή του B
+;   int_idx 4  γρ. 138  μέσα στο A (σειρά 17): R6 = 4 για το HUD. Το A
+;                       τελειώνει στη σειρά 20 χωρίς να ξαναπεράσει τη 4, και
+;                       ως τη σειρά 4 του B (γρ. 200) μένουν 62 γραμμές για
+;                       όσο κρατήσει ένα DI (blit sprite, copy_half)
 ;   int_idx 5  γρ. 190  μέσα στο B (σειρά 2): R4 = 17, R7 = 9 (VSYNC στη
-;                       γρ. 240), R6 = 4 (το HUD), R12/R13 = κάμερα -> στην
-;                       αρχή του επόμενου A
+;                       γρ. 240), R12/R13 = κάμερα -> στην αρχή του επόμενου A
 ;
 ; Κάθε εγγραφή γίνεται μακριά από την πρώτη σειρά του καρέ (εκεί ο CRTC 1
 ; διαβάζει το R12/R13) και πριν φτάσει ο μετρητής στο R4/R7 που αλλάζει, άρα
@@ -73,6 +79,8 @@ int_handler:
         inc a
         cp 2
         jr z,.split_a
+        cp 4
+        jr z,.hud_r6
         cp 5
         jr z,.split_b
 .store: ld (int_idx),a
@@ -104,6 +112,17 @@ int_handler:
         ei
         ret
 
+.hud_r6:
+        ld (int_idx),a
+        ld bc,#BC06
+        out (c),c
+        ld bc,#BD00+HUD_ROWS
+        out (c),c
+        pop bc
+        pop af
+        ei
+        ret
+
 .split_b:
         ld (int_idx),a
         ld bc,#BC04
@@ -113,10 +132,6 @@ int_handler:
         ld bc,#BC07
         out (c),c
         ld bc,#BD00+VSYNC_ROW-GAME_ROWS
-        out (c),c
-        ld bc,#BC06
-        out (c),c
-        ld bc,#BD00+HUD_ROWS
         out (c),c
         ld bc,#BC0C
         out (c),c

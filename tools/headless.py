@@ -6,8 +6,8 @@
     late = καρέ που δεν χώρεσαν στα 40 ms
   - ελέγχει ότι η σελίδα που εμφανίζεται είναι ακριβώς ο χάρτης κάτω από την
     κάμερά της, κελί-κελί (εκτός από τα κελιά κάτω από το σκάφος)
-  - μετράει τον χρόνο εργασίας κάθε καρέ: από το flip ως την ώρα που ο
-    PC φτάνει στον βρόχο αναμονής του επόμενου flip (ανάλυση 100 µs)
+  - μετράει τον χρόνο εργασίας κάθε καρέ: από την έξοδο από το flip ως
+    την είσοδο στο επόμενο (ανάλυση 100 µs)· > 40 ms = το καρέ δεν χωράει
   - γράφει screenshot στο build/test_<σενάριο>.png
 
     python3 tools/headless.py [build/SpaceForceC.dsk]
@@ -22,15 +22,20 @@ import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.environ.get("CPCHEADLESS", os.path.expanduser("~/cpcemu")))
+import ctypes  # noqa: E402
+import cpc as cpcmod  # noqa: E402
 from cpc import CPC, JOY_UP, JOY_DOWN, JOY_LEFT, JOY_RIGHT  # noqa: E402
+
+cpcmod._lib.cpcemu_ram_ptr.restype = ctypes.POINTER(ctypes.c_uint8)
+cpcmod._lib.cpcemu_ram_ptr.argtypes = [ctypes.c_void_p, ctypes.c_int]
 
 DSK = sys.argv[1] if len(sys.argv) > 1 else os.path.join(ROOT, "build/SpaceForceC.dsk")
 SYM = os.path.join(ROOT, "build/sfc.sym")
 TILES = open(os.path.join(ROOT, "assets/data/tiles.bin"), "rb").read()
 
 MAP_W, MAP_H, VIEW_W, VIEW_H = 64, 48, 40, 21
-BUF_SIZE = 5
-SHIP_W, SHIP_H = 6, 24
+BUF_SIZE = 7
+REC_SIZE = 7
 
 SCENARIOS = [
     ("right", JOY_RIGHT, 120),
@@ -59,19 +64,32 @@ def word(c, addr):
     return lo | hi << 8
 
 
+def bank_read(c, bank, addr, size):
+    """Ένα από τα 8 banks των 16K, όπως φαίνεται στο #4000 (C4-C7)."""
+    p = cpcmod._lib.cpcemu_ram_ptr(c._h, bank)
+    off = addr & 0x3FFF
+    return bytes(p[off:off + size])
+
+
 def check_view(c, s):
     """Η σελίδα που εμφανίζεται == ο χάρτης κάτω από την κάμερά της."""
     draw_page = c.peek(s["draw_page"])
     shown = 0xC0 if draw_page == 0x80 else 0x80
     buf = s["bufs"] + (BUF_SIZE if shown == 0xC0 else 0)
-    cx, cy, ox = c.read_ram(buf, 3)
-    oy = word(c, buf + 3)
-    bg_map = c.read_ram(s["bg_map"], MAP_W * MAP_H)
-    ship = (ox // 2, (ox + SHIP_W - 1) // 2, oy // 8, (oy + SHIP_H - 1) // 8)
+    cx, cy, nrec = c.read_ram(buf, 3)
+    recs = word(c, buf + 3)
+    covered = set()             # κελιά κάτω από sprites αυτής της σελίδας
+    for i in range(nrec):
+        x, ylo, yhi, w, h = c.read_ram(recs + i * REC_SIZE, 5)
+        y = ylo | yhi << 8
+        for wy in range(y // 8, (y + h - 1) // 8 + 1):
+            for wx in range(x // 2, (x + w - 1) // 2 + 1):
+                covered.add((wx, wy))
+    bg_map = bank_read(c, 4, s["bg_map"], MAP_W * MAP_H)
     bad = []
     for wy in range(cy, cy + VIEW_H):
         for wx in range(cx, cx + VIEW_W):
-            if ship[0] <= wx <= ship[1] and ship[2] <= wy <= ship[3]:
+            if (wx, wy) in covered:
                 continue
             tile = bg_map[wy * MAP_W + wx // 2]
             src = tile * 32 + (wx & 1) * 2
@@ -83,7 +101,7 @@ def check_view(c, s):
                 if bytes(got) != want:
                     bad.append((wx, wy, line))
                     break
-    return shown, cx, cy, bad
+    return shown, cx, cy, nrec, bad
 
 
 STEP_US = 100
@@ -91,7 +109,7 @@ STEP_US = 100
 
 def run_measured(c, s, frames):
     """Τρέχει frames καρέ των 50 Hz· επιστρέφει τους χρόνους εργασίας (ms)."""
-    wait_lo, wait_hi = s["flip.wait"], s["flip.swap"]
+    wait_lo, wait_hi = s["flip"], s["flip.swap"]
     times, busy, waiting = [], 0, False
     for _ in range(frames * 20000 // STEP_US):
         c.run_us(STEP_US)
@@ -113,7 +131,7 @@ def main():
     c.run_frames(150)
     c.insert_disc(DSK)
     c.type_text('RUN"DISC\n')
-    c.run_frames(250)
+    c.run_frames(400)
     c.set_joystick_type(1)
     ok = True
     for name, mask, frames in SCENARIOS:
@@ -123,12 +141,12 @@ def main():
         c.joystick(0)
         c.run_frames(1)
         f1, l1 = word(c, s["frames"]), word(c, s["late_frames"])
-        shown, cx, cy, bad = check_view(c, s)
+        shown, cx, cy, nrec, bad = check_view(c, s)
         ship = (c.peek(s["ship_x"]), word(c, s["ship_y"]))
         status = "OK" if not bad else "ΛΑΘΟΣ %d κελιά, π.χ. %s" % (len(bad), bad[:3])
         work = "%4.1f/%4.1f ms" % (sum(times) / len(times), max(times)) if times else "   -"
-        print("%-11s %3d καρέ  late %d  εργασία μέση/μέγ. %s  σκάφος %3d,%3d  κάμερα %2d,%2d  %s"
-              % (name, f1 - f0, l1 - l0, work, ship[0], ship[1], cx, cy, status))
+        print("%-11s %3d καρέ  late %d  εργασία μέση/μέγ. %s  σκάφος %3d,%3d  κάμερα %2d,%2d  sprites %2d  %s"
+              % (name, f1 - f0, l1 - l0, work, ship[0], ship[1], cx, cy, nrec, status))
         c.screenshot(os.path.join(ROOT, "build/test_%s.png" % name))
         if bad or f1 == f0:
             ok = False
