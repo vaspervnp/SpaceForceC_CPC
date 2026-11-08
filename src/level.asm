@@ -1,9 +1,12 @@
 ; level.asm — οι πίστες: φόρτωμα από το bank 7 και αποσυμπίεση στο bank 4
 ;
 ; Όλες οι πίστες (assets/src/levels.py) είναι συμπιεσμένες στο bank 7
-; (LEVELS.BIN, το φορτώνει το DISC.BAS). Ανά πίστα τρία κομμάτια: ο χάρτης,
+; (LEVELS.BIN, το φορτώνει το DISC.BAS). Ανά πίστα πέντε κομμάτια: ο χάρτης,
 ; που ανοίγει στο bg_map, το header (κόσμος, μουσική, κείμενα, λίστα εχθρών),
-; που ανοίγει στο LEVEL_HDR, και ο boss, στο BOSS_GFX του bank 5. Το bank 7 και το bank 4 βγαίνουν στο
+; που ανοίγει στο LEVEL_HDR, ο boss στο BOSS_GFX του bank 5, τα πλακίδια της
+; στα tiles_gfx και οι δύο εχθροί της στο bank 5. Τα τρία τελευταία τα
+; μοιράζονται πίστες και είναι στο bank 6, μετά τον ήχο (bit 15 της διεύθυνσης
+; στον πίνακα). Το bank 7 και το bank 4 βγαίνουν στο
 ; ίδιο παράθυρο (#4000), οπότε τα συμπιεσμένα περνούν πρώτα στη σελίδα
 ; #8000 της οθόνης, που στη μετάβαση δεν φαίνεται και μετά ξαναζωγραφίζεται.
 
@@ -12,7 +15,8 @@ LV_WORLD        equ 0           ; 0 = διάστημα, 8 = Γη (ship_world)
 LV_MUSIC        equ 1
 LV_COUNT        equ 2           ; πόσοι εχθροί στη λίστα
 LV_BOSS         equ 3           ; 0 = χωρίς boss (οι παράμετροι: boss.asm)
-LV_TEXT         equ 4           ; όνομα, 2 γραμμές χιούμορ, με 0 στο τέλος
+LV_SKY          equ 4           ; το χρώμα του pen 0 (gate array)
+LV_TEXT         equ 5           ; όνομα, 2 γραμμές χιούμορ, με 0 στο τέλος
 STAGE           equ #8000       ; προσωρινά τα συμπιεσμένα
 STAGE_SIZE      equ 2048        ; >= το μεγαλύτερο κομμάτι (levels.py)
 GA_RAM_C7       equ #C7
@@ -23,7 +27,8 @@ level_load:
         add a,a
         ld e,a
         add a,a
-        add a,e                 ; *6
+        add a,a
+        add a,e                 ; *10
         ld e,a
         ld d,0
         ld hl,level_table
@@ -37,6 +42,13 @@ level_load:
         ld de,BOSS_GFX
         ld a,#C5
         call .part
+        ld de,tiles_gfx
+        ld a,#C4
+        call .part
+        ld de,enemies_gfx+MOBS_OFF
+        ld a,#C5
+        call .part
+        call make_halftiles     ; από τα νέα πλακίδια
         ld a,(LEVEL_HDR+LV_WORLD)
         ld (ship_world),a
         ld a,(LEVEL_HDR+LV_COUNT)
@@ -58,7 +70,12 @@ level_load:
         inc hl
         push hl
         ex de,hl
-        ld de,STAGE
+        bit 7,h                 ; bit 15: στο bank 6
+        jr z,.copy
+        res 7,h
+        ld bc,#7F00+GA_RAM_C6
+        out (c),c
+.copy:  ld de,STAGE
         ld bc,STAGE_SIZE
         ldir
 .cfg:   ld a,0
@@ -71,6 +88,13 @@ level_load:
         call lz_unpack
         RAM_WORLD
         pop hl
+        ret
+
+; Το pen 0: ο ουρανός της πίστας, μαύρο στις οθόνες. in: A = χρώμα (gate array)
+set_sky:
+        ld bc,#7F00
+        out (c),c
+        out (c),a
         ret
 
 ; Αποσυμπίεση (η μορφή είναι στο levels.py). in: HL = από, DE = προς

@@ -305,10 +305,8 @@ boss_frame:
 ; Από το enemy_explode: η αντοχή του τελείωσε.
 boss_explode:
         ld (ix+EN_TIMER),BOSS_BOOM_TIME
-        ld hl,(score)
         ld de,BOSS_SCORE
-        add hl,de
-        ld (score),hl
+        call add_score
         ld a,1
         ld (hud_dirty),a
         ld hl,boss_bye

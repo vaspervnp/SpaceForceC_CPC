@@ -13,6 +13,7 @@
 #   make clean
 #
 #   PROFILE=1       raster bars στο border (χρόνος ανά φάση του καρέ)
+#   START=n         το παιχνίδι ξεκινάει από την πίστα n (δοκιμές)
 
 RASM     ?= rasm
 IDSK     ?= iDSK
@@ -31,7 +32,7 @@ ASSET_PY := $(wildcard assets/src/*.py)
 ASSET_DATA := $(wildcard assets/data/*.asm)
 
 # Αλλαγή στα flags (π.χ. PROFILE) => ξαναχτίζεται ό,τι εξαρτάται από αυτά.
-RASMFLAGS := -I src $(if $(PROFILE),-DPROFILE=1)
+RASMFLAGS := -I src $(if $(PROFILE),-DPROFILE=1) $(if $(START),-DSTART_LEVEL=$(START))
 FLAGS_STAMP := $(BUILD)/flags
 
 .PHONY: all snap run run-snap run-cpcemu shot test sound assets clean FORCE

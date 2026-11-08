@@ -231,10 +231,8 @@ apply_item:
 .power: push af
         ld a,sfx_pickup
         call play_sfx
-        ld hl,(score)
         ld de,ITEM_SCORE
-        add hl,de
-        ld (score),hl
+        call add_score
         pop af
         cp IT_SHIELD
         jr nz,.esp
@@ -305,10 +303,18 @@ apply_item:
 .dirty: ld a,1
         ld (hud_dirty),a
         ret
-.score: ld hl,(score)
-        add hl,de
-        ld (score),hl
+.score: call add_score
         jr .dirty
+
+; Σκορ += DE. Σταματάει στο 65535: ένα καλό παιχνίδι ξεπερνά τα 16 bits, και
+; το γύρισμα στο 0 θα έχανε το ρεκόρ.
+add_score:
+        ld hl,(score)
+        add hl,de
+        jr nc,.ok
+        ld hl,#FFFF
+.ok:    ld (score),hl
+        ret
 
 ; Το Bubble Wrap απορροφά ένα χτύπημα. out: CF = 1 αν το απορρόφησε.
 use_shield:

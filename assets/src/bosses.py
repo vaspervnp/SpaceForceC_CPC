@@ -1,4 +1,4 @@
-"""Οι bosses του διαστήματος: όλοι 24x48 px, δύο καρέ, τρία βλήματα 8x8.
+"""Οι bosses: όλοι 24x48 px, δύο καρέ, τρία βλήματα 8x8.
 
     καρέ 0   κανονικός
     καρέ 1   η προειδοποίηση πριν από τη βολή
@@ -277,6 +277,310 @@ FORMIX_SHOTS = [
 ]
 
 
+# ----------------------------------------------- The Undefeated Toll Booth
+
+def toll(attack=False):
+    """Διόδια με φάτσα. Πριν από τη βολή κατεβαίνει η μπάρα και ανάβει κόκκινο."""
+    img = blank(W, H, None)
+    # στέγη
+    _box(img, 2, 2, 21, 7, r)
+    for x in range(4, 20, 4):
+        _rect(img, x, 3, x + 1, 6, I)
+    # φανάρι
+    _box(img, 9, 8, 14, 12, K)
+    _rect(img, 10, 9, 13, 11, r if attack else g)
+    # θάλαμος
+    _box(img, 3, 12, 20, 45, i)
+    # παράθυρο-πρόσωπο
+    _box(img, 5, 14, 18, 28, c)
+    for x0 in (7, 13):
+        _rect(img, x0, 17, x0 + 3, 20, I)
+        _rect(img, x0 + 1, 18, x0 + 2, 20, K)
+    for k in range(4):
+        img[15 + k // 2][7 + k] = K
+        img[15 + k // 2][16 - k] = K
+    _rect(img, 8, 24, 15, 26, K)
+    if attack:
+        _rect(img, 9, 25, 14, 25, r)
+    # θυρίδα για τα κέρματα
+    _box(img, 7, 31, 16, 38, y)
+    _rect(img, 9, 33, 14, 34, K)
+    # η μπάρα, ριγέ: οριζόντια ή σηκωμένη
+    if attack:
+        for k in range(8):
+            _rect(img, 0, 40 - k * 2, 2, 40 - k * 2 + 1, r if k % 2 else I)
+    else:
+        for x in range(0, 24, 2):
+            _rect(img, x, 40, x + 1, 42, r if x // 2 % 2 else I)
+    _rect(img, 4, 46, 19, 47, K)
+    return img
+
+
+TOLL_SHOTS = [
+    ('coin', 'κέρμα', """
+..yyyy..
+.yyDDyy.
+yyDyyDyy
+yyDyyDyy
+yyDyyDyy
+yyDyyDyy
+.yyDDyy.
+..yyyy..
+"""),
+    ('bar', 'μπάρα', """
+........
+........
+rrIIrrII
+rrIIrrII
+KKKKKKKK
+........
+........
+........
+"""),
+    ('ticket', 'απόδειξη', """
+.IIIIII.
+.IKKKKI.
+.IIIIII.
+.IKKIII.
+.IIIIII.
+.IKKKKI.
+.IIIIII.
+.I.II.I.
+"""),
+]
+
+
+# --------------------------------------------------------- Queen Ant-Zilla
+
+def antzilla(attack=False):
+    """Η βασίλισσα με κορώνα, πράσινη από το ραδιενεργό τσάι."""
+    img = blank(W, H, None)
+    _disc(img, 11.5, 38, 10, 9, n)              # κοιλιά
+    for yy in (33, 38, 43):
+        for xx in range(3, 21):
+            if img[yy][xx] == n:
+                img[yy][xx] = g
+    _disc(img, 11.5, 25, 6, 5, d)               # θώρακας
+    for yy, dx in ((22, 0), (26, 1), (30, 0)):  # πόδια
+        for k in range(6):
+            for yd in (yy + k // 2, yy + 1 + k // 2):
+                img[yd][5 - k + dx] = d
+                img[yd][18 + k - dx] = d
+    _disc(img, 11.5, 14, 8, 7, g)               # κεφάλι
+    for x0 in (6, 13):                          # σύνθετα μάτια
+        _disc(img, x0 + 2, 12, 3, 3, r if attack else y)
+        img[11][x0 + 1] = I
+    if attack:                                  # ανοιχτό στόμα, τσάι
+        _rect(img, 8, 17, 15, 20, K)
+        _rect(img, 9, 18, 14, 19, y)
+    else:
+        for k in range(4):
+            img[18 + k // 2][9 - k // 2] = K
+            img[18 + k // 2][14 + k // 2] = K
+    # κορώνα
+    _rect(img, 6, 4, 17, 7, y)
+    for x in (6, 10, 13, 17):
+        _rect(img, x, 1, x, 4, y)
+    img[5][8] = img[5][15] = r
+    img[5][11] = c
+    _rect(img, 6, 7, 17, 7, K)
+    # κεραίες
+    for k in range(5):
+        img[8 - k // 2][4 - k // 2] = d
+        img[8 - k // 2][19 + k // 2] = d
+    return img
+
+
+ZILLA_SHOTS = [
+    ('tea', 'ραδιενεργό τσάι', """
+...gg...
+...gg...
+..gggg..
+.ggyggg.
+.gggggg.
+.ggggyg.
+..gggg..
+........
+"""),
+    ('egg', 'αυγό', """
+...II...
+..IIII..
+.IIIIII.
+.IIIIiI.
+.IIIIiI.
+.IIIiiI.
+..Iiii..
+........
+"""),
+    ('cup', 'φλιτζάνι', """
+........
+.IIIIII.
+.IggggIK
+.IIIIIIK
+.IIIIIIK
+..IIII..
+.iiiiii.
+........
+"""),
+]
+
+
+# --------------------------------------------------------- Parthenon-Bot 2.0
+
+def parthenon(attack=False):
+    """Ναός. Στην επίθεση σηκώνει τις δύο εξωτερικές κολόνες, σαν χέρια."""
+    img = blank(W, H, None)
+    # αέτωμα, με τα μάτια μέσα
+    for row in range(2, 13):
+        half = (row - 1)
+        _rect(img, 11 - half, row, 12 + half, row, S)
+        img[row][max(0, 11 - half)] = K
+        img[row][min(W - 1, 12 + half)] = K
+    _rect(img, 0, 13, 23, 13, K)
+    for x0 in (7, 13):
+        _rect(img, x0, 8, x0 + 3, 11, r if attack else c)
+        _rect(img, x0 + 1, 9, x0 + 2, 10, K)
+    # θριγκός
+    _box(img, 0, 13, 23, 17, S)
+    for x in range(2, 22, 3):
+        _rect(img, x, 14, x, 16, i)
+    # κολόνες: οι εσωτερικές πάντα, οι εξωτερικές ανεβαίνουν
+    def column(x0, y0, y1):
+        _rect(img, x0, y0, x0 + 3, y1, S)
+        img[y0][x0] = img[y0][x0 + 3] = K
+        for yy in range(y0, y1 + 1):
+            img[yy][x0] = K
+            img[yy][x0 + 3] = K
+            img[yy][x0 + 1] = i
+    for x0 in (6, 14):
+        column(x0, 18, 38)
+    up = 12 if attack else 0
+    for x0 in (0, 20):
+        column(x0, 18 - up, 38 - up)
+    # το στόμα: η πόρτα του ναού
+    _rect(img, 10, 26, 13, 38, K)
+    if attack:
+        _rect(img, 11, 28, 12, 36, r)
+    # πόδια-κρηπίδα
+    _box(img, 2, 39, 21, 42, S)
+    for x0 in (3, 14):
+        _box(img, x0, 42, x0 + 6, 47, i)
+    return img
+
+
+TEMPLE_SHOTS = [
+    ('chunk', 'κομμάτι μάρμαρο', """
+........
+..SSS...
+.SSSSSS.
+.SSiSSS.
+.SSSSSi.
+..SSiSi.
+...iii..
+........
+"""),
+    ('drum', 'σπόνδυλος', """
+.SSSSSS.
+SiSiSiSK
+SiSiSiSK
+SiSiSiSK
+SiSiSiSK
+SiSiSiSK
+.KKKKKK.
+........
+"""),
+    ('flash', 'φλας τουρίστα', """
+...I....
+.I.I.I..
+..III...
+IIIyIII.
+..III...
+.I.I.I..
+...I....
+........
+"""),
+]
+
+
+# ------------------------------------------------------ Chef Xylokorinthos
+
+def chef(attack=False):
+    """Εξωγήινος σεφ με έξι χέρια: τα σηκώνει πριν πετάξει κάτι."""
+    img = blank(W, H, None)
+    # σκούφος
+    _disc(img, 11.5, 5, 8, 5, I)
+    _rect(img, 6, 8, 17, 12, I)
+    _rect(img, 6, 12, 17, 12, K)
+    for x in (9, 12, 15):
+        _rect(img, x, 9, x, 11, i)
+    # κεφάλι
+    _disc(img, 11.5, 17, 7, 6, g)
+    for x0 in (7, 13):
+        _rect(img, x0, 15, x0 + 3, 17, I)
+        _rect(img, x0 + 1, 16, x0 + 2, 17, r if attack else K)
+    if attack:
+        _rect(img, 9, 20, 14, 22, K)
+    else:
+        _rect(img, 9, 21, 14, 21, K)
+    # μουστάκι
+    _rect(img, 6, 19, 8, 19, K)
+    _rect(img, 15, 19, 17, 19, K)
+    # σακάκι
+    _box(img, 6, 23, 17, 44, I)
+    for yy in (27, 32, 37):
+        img[yy][11] = img[yy][12] = K
+    _rect(img, 7, 23, 16, 24, r)                # κόκκινο μαντήλι
+    # ποδιά, πόδια
+    _rect(img, 8, 36, 15, 43, i)
+    for x0 in (7, 13):
+        _rect(img, x0, 45, x0 + 3, 47, K)
+    # έξι χέρια: τρία ανά πλευρά, με τηγάνια στα χέρια
+    for k, yy in enumerate((24, 30, 36)):
+        rise = (3 + k * 2) if attack else 0
+        for x in range(1, 6):
+            yl = yy - (5 - x) * rise // 5
+            img[yl][x] = img[yl + 1][x] = g
+            img[yl][W - 1 - x] = img[yl + 1][W - 1 - x] = g
+        tip = yy - rise
+        _rect(img, 0, tip - 2, 1, tip + 1, K)
+        _rect(img, 22, tip - 2, 23, tip + 1, K)
+    return img
+
+
+CHEF_SHOTS = [
+    ('soup', 'καυτή σούπα', """
+..g..g..
+...g....
+.KKKKKK.
+.KggggK.
+.KgygyK.
+.KiiiiK.
+..KKKK..
+........
+"""),
+    ('frypan', 'τηγάνι', """
+.KKKK...
+KiiiiK..
+KiKKiK..
+KiKKiK..
+KiiiiKdd
+.KKKK.dd
+........
+........
+"""),
+    ('ladle', 'κουτάλα', """
+......ii
+.....ii.
+....ii..
+...ii...
+.KKi....
+KggK....
+KggK....
+.KK.....
+"""),
+]
+
+
 def _shots(items):
     return [art(t, SHOT_W, SHOT_H, nm) for nm, _, t in items]
 
@@ -288,4 +592,8 @@ BOSSES = {
     2: ('The Grand Inspector', [inspector(), inspector(True)], _shots(STAMP_SHOTS)),
     3: ('Mecha-Trashcan 3000', [mecha(), mecha(True)], _shots(MECHA_SHOTS)),
     4: ('General Formix', [formix(), formix(True)], _shots(FORMIX_SHOTS)),
+    5: ('Undefeated Toll Booth', [toll(), toll(True)], _shots(TOLL_SHOTS)),
+    6: ('Queen Ant-Zilla', [antzilla(), antzilla(True)], _shots(ZILLA_SHOTS)),
+    7: ('Parthenon-Bot 2.0', [parthenon(), parthenon(True)], _shots(TEMPLE_SHOTS)),
+    8: ('Chef Xylokorinthos', [chef(), chef(True)], _shots(CHEF_SHOTS)),
 }

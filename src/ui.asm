@@ -84,6 +84,8 @@ menu_sfx:
 ; Καθαρή σελίδα UI στην οθόνη, καθαρό HUD, κείμενο στη σελίδα.
 ui_page:
         RAM_WORLD
+        ld a,HW_BLACK
+        call set_sky
         ld a,TITLE_PAGE
         call clear_page_a
         ld a,TITLE_PAGE

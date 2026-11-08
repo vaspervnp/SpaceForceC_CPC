@@ -56,10 +56,10 @@ KI_SIZE         equ 5
 kind_info:
         db AI_WAVE,  GUN_E9,       1,1,90   ; grunt: η μάζα, σε σχηματισμούς
         db AI_STATIC,GUN_NONE,     1,0,0    ; νάρκη: σκάει στην επαφή
-        db AI_BOUNCE,GUN_NONE,     1,1,0    ; κάλτσα
         db AI_CIRCLE,GUN_SPAGHETTI,2,1,70   ; δίσκος: Laser Spaghetti
-        db AI_BOUNCE,GUN_NONE,     3,1,0    ; βαλίτσα: αργή, αντέχει
         db AI_CHASE, GUN_TORPEDO,  3,2,60   ; κατσαρίδα-διοικητής
+        db AI_BOUNCE,GUN_NONE,     1,1,0    ; κάλτσα (ή ό,τι φέρνει η πίστα)
+        db AI_BOUNCE,GUN_NONE,     3,1,0    ; βαλίτσα (ή ό,τι φέρνει η πίστα)
         db AI_STATIC,GUN_NONE,     0,3,0    ; boss (όλα τα άλλα στο boss.asm)
 
 ; Οι πρώτοι ENEMY_N της λίστας της πίστας (level.asm), όπου κι αν είναι.
@@ -293,10 +293,8 @@ update_actors:
         ld (ix+EN_STATE),ST_DEAD
         ld (ix+EN_TIMER),DEAD_TIME
         ld (iy+SPR_FLAGS),0
-        ld hl,(score)
         ld de,KILL_SCORE
-        add hl,de
-        ld (score),hl
+        call add_score
         ld a,1
         ld (hud_dirty),a
         call kind_ptr           ; μυρμήγκια εκεί που έσκασε

@@ -169,6 +169,16 @@ def clear_enemies(c, s):
         c.poke(s["enemies"] + i * EN_SIZE + 7, 1)
 
 
+def has_black_band(c):
+    """Ολόκληρη γραμμή μαύρη μέσα στην εικόνα. Στον χρωματιστό ουρανό το pen 0
+    δεν είναι μαύρο, οπότε αυτό σημαίνει σβηστό σήμα (VSYNC στη λάθος θέση)."""
+    im = c.image()
+    for y in range(44, 200):
+        if all(im.getpixel((x, y)) == (0, 0, 0) for x in range(70, 700, 30)):
+            return True
+    return False
+
+
 def boss_flow(c, s):
     """Τέλος λίστας -> boss -> μάχη με fire προς τα πάνω -> Level Complete."""
     clear_enemies(c, s)
@@ -192,11 +202,14 @@ def boss_flow(c, s):
     late0, f0 = word(c, s["late_frames"]), word(c, s["frames"])
     hp0 = c.peek(boss + EN_HP)
     c.joystick(JOY_FIRE)
-    junk, n = 0, 0
+    junk, n, bands = 0, 0, 0
+    sky = c.peek(s["level"]) in (4, 6)      # χρωματιστός ουρανός: φαίνονται
     while c.peek(boss + EN_STATE) == 0 and n < 6000:
         c.poke(s["invuln"], 50)
         c.run_frames(1)
         n += 1
+        if sky and has_black_band(c):
+            bands += 1
         for e in range(5):
             if c.peek(s["eshots"] + e * 6 + 2) and c.peek(s["eshots"] + e * 6 + 3) == 4:
                 junk += 1
@@ -209,7 +222,9 @@ def boss_flow(c, s):
     print("boss %d: αντοχή %d -> %d σε %.1f s, hardware στον αέρα %d καρέ, late %d/%d, σκάφος %d,%d"
           % (c.peek(s["level"]) + 1, hp0, c.peek(boss + EN_HP), n / 50, junk, late, fr,
              c.peek(s["ship_x"]), word(c, s["ship_y"])))
-    good = n < 6000 and junk > 0
+    good = n < 6000 and junk > 0 and bands == 0
+    if bands:
+        print("   ΜΑΥΡΕΣ ΛΩΡΙΔΕΣ σε %d καρέ: VSYNC μέσα στην εικόνα" % bands)
     c.run_frames(30)
     c.screenshot(os.path.join(ROOT, "build/test_boss_boom.png"))
     c.run_frames(350)               # εκρήξεις, χρόνος για τα μυρμήγκια
@@ -229,19 +244,36 @@ def next_level(c, s, n):
     return check_level(c, s, n)
 
 
-def space_flow(c, s):
-    """Οι 4 bosses του διαστήματος στη σειρά, ως την πίστα 5 (χωρίς boss)."""
+def whole_game(c, s):
+    """Και οι 8 πίστες με τους bosses τους, ως το τέλος του παιχνιδιού."""
     good = boss_flow(c, s)
-    for n in (2, 3, 4):
-        good = next_level(c, s, n) and boss_flow(c, s) and good
-    good = next_level(c, s, 5) and good
-    c.screenshot(os.path.join(ROOT, "build/test_level5_game.png"))
-    # πίστα χωρίς boss: το τέλος της λίστας φέρνει κατευθείαν Level Complete
-    clear_enemies(c, s)
-    c.run_frames(60)
-    no_boss = c.peek(s["boss_on"]) == 0
-    print("πίστα 5 χωρίς boss: %s" % ("OK" if no_boss else "ΛΑΘΟΣ"))
-    return next_level(c, s, 6) and no_boss and good
+    for n in range(2, 9):
+        good = next_level(c, s, n) and good
+        if n == 8:                  # το σκορ σταματάει στο 65535, δεν γυρίζει
+            c.poke(s["score"], 64000 & 255)
+            c.poke(s["score"] + 1, 64000 >> 8)
+        good = boss_flow(c, s) and good
+    capped = word(c, s["score"]) == 65535
+    print("σκορ στο όριο: %d %s" % (word(c, s["score"]), "OK" if capped else "ΛΑΘΟΣ"))
+    good = good and capped
+    # μετά τον τελευταίο: Level Complete -> όνομα -> πίνακας -> τίτλος
+    score = word(c, s["score"])
+    fire(c)
+    c.run_frames(30)
+    c.screenshot(os.path.join(ROOT, "build/test_win.png"))
+    for _ in range(3):
+        fire(c)
+    c.run_frames(30)
+    top = bytes(c.read_ram(s["hiscores"], 5))
+    won = top[:3] == b"AAA" and top[3] | top[4] << 8 == score
+    print("τέλος παιχνιδιού: σκορ %d, ρεκόρ %r %s" % (score, top, "OK" if won else "ΛΑΘΟΣ"))
+    fire(c)                         # πίνακας -> τίτλος
+    c.run_frames(30)
+    fire(c)                         # νέο παιχνίδι
+    c.run_frames(20)
+    fire(c)
+    c.run_frames(30)
+    return good and won and check_level(c, s, 1)
 
 
 def game_over_flow(c, s):
@@ -263,7 +295,7 @@ def game_over_flow(c, s):
         fire(c)
     c.run_frames(30)
     c.screenshot(os.path.join(ROOT, "build/test_hiscores.png"))
-    top = bytes(c.read_ram(s["hiscores"], 5))
+    top = bytes(c.read_ram(s["hiscores"] + 5, 5))    # (1η θέση: το τέλος του παιχνιδιού)
     good = top == b"CAA" + bytes([6000 & 255, 6000 >> 8])
     print("ρεκόρ: %r %s" % (top, "OK" if good else "ΛΑΘΟΣ"))
     return good
@@ -306,7 +338,7 @@ def main():
             ok = False
     late = word(c, s["late_frames"])
     print("σύνολο: %d καρέ, %d άργησαν" % (word(c, s["frames"]), late))
-    ok = ok_level and space_flow(c, s) and ok
+    ok = ok_level and whole_game(c, s) and ok
     ok = game_over_flow(c, s) and ok
     sys.exit(0 if ok else 1)
 

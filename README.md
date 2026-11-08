@@ -11,8 +11,9 @@ Arcade multi-directional scrolling shooter για τον **Amstrad CPC 6128** σ
 M6 (τα όπλα), το M7 (οι εχθροί και τα όπλα τους), το M8 (power-ups),
 το M9 (HUD, τίτλος, redefine keys, high scores), το M10 (μουσική και
 ηχητικά εφέ στο AY), το M11 (8 πίστες, συμπιεσμένες στο bank 7, με οθόνες
-μετάβασης), το M12 (η πίστα 1 ολόκληρη, με τον boss Lord Garbage-Can) και το
-M13 (οι πίστες 2-4 με τους bosses τους).
+μετάβασης), το M12 (η πίστα 1 ολόκληρη, με τον boss Lord Garbage-Can), το
+M13 (οι πίστες 2-4 με τους bosses τους) και το M14 (οι πίστες 5-8 της Γης).
+Το παιχνίδι παίζεται ολόκληρο, και οι 8 πίστες με τους 8 bosses.
 Το demo οδηγεί το σκάφος, με αδράνεια και φλόγα εξάτμισης, σε χάρτη 4x2
 οθονών με hardware scroll, στα 25 FPS με double buffering, με HUD σε split
 screen και 10 εχθρούς με δική τους συμπεριφορά: σχηματισμοί, κύκλοι,
@@ -76,6 +77,7 @@ make
 | `make snap` / `make run-snap` | snapshot (`build/sfc.sna`) που ξεκινάει κατευθείαν |
 | `make shot` | Caprice32 χωρίς παράθυρο, γράφει `build/screenshot.png` |
 | `make sound` | headless: οι registers του AY γίνονται `build/sound_*.wav` (τίτλος, παιχνίδι, game over) |
+| `make START=n` | το παιχνίδι ξεκινάει από την πίστα n, για δοκιμές (μετά ξανά `make` για κανονικό) |
 | `make test` | headless CPC (`~/cpcemu`): σενάρια κίνησης, χρόνος καρέ, έλεγχος οθόνης κελί-κελί (`CRTC=0/1/2` για τύπο CRTC) |
 | `make run-cpcemu` | CPCEMU 2.5 για Linux (`CPCEMU_TGZ=` το tarball από το cpc-emu.org) |
 | `make PROFILE=1 ...` | raster bars στο border: ο χρόνος κάθε φάσης του καρέ |

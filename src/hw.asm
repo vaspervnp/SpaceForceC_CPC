@@ -26,8 +26,11 @@ FRAME_VBLS      equ 2           ; 50 Hz / 2 = 25 FPS
 ;                       σειρά 4 του, και το R6 ελέγχεται μόνο όταν ο μετρητής
 ;                       σειρών το συναντήσει. Γραμμένο μέσα στο A θα ερχόταν
 ;                       αργά: η εικόνα σβήνει στη σειρά 4 ως το επόμενο καρέ.
+;                       R7 = 127 (χωρίς VSYNC), τώρα που το VSYNC ξεκίνησε: με
+;                       R7 = 9 στο A, ένα DI του μεγάλου boss που καθυστερούσε
+;                       το idx 2 ως τη σειρά 9 έβγαζε VSYNC μέσα στην εικόνα.
 ;   int_idx 2  γρ.  34  μέσα στο A: R4 = 20 (το A τελειώνει στη σειρά 20),
-;                       R7 = 127 (χωρίς VSYNC), R12/R13 = HUD -> στην αρχή του B
+;                       R12/R13 = HUD -> στην αρχή του B
 ;   int_idx 4  γρ. 138  μέσα στο A (σειρά 17): R6 = 4 για το HUD. Το A
 ;                       τελειώνει στη σειρά 20 χωρίς να ξαναπεράσει τη 4, και
 ;                       ως τη σειρά 4 του B (γρ. 200) μένουν 62 γραμμές για
@@ -67,12 +70,16 @@ int_handler:
         in a,(c)
         rra
         jr nc,.next
-        ld a,(vbl_count)
+.vsync: ld a,(vbl_count)
         inc a
         ld (vbl_count),a
         ld bc,#BC06
         out (c),c
         ld bc,#BD00+GAME_ROWS
+        out (c),c
+        ld bc,#BC07
+        out (c),c
+        ld bc,#BD7F
         out (c),c
         ld a,(snd_ticks)        ; ticks του ήχου (sound.asm)
         inc a
@@ -81,6 +88,8 @@ int_handler:
         jr .store
 .next:  ld a,(int_idx)
         inc a
+        cp 6                    ; το 6ο χωρίς το bit: ένα DI το καθυστέρησε
+        jr z,.vsync             ; πέρα από το VSYNC (το bit κρατάει 8-16 γραμμές)
         cp 2
         jr z,.split_a
         cp 4
@@ -98,10 +107,6 @@ int_handler:
         ld bc,#BC04
         out (c),c
         ld bc,#BD00+GAME_ROWS-1
-        out (c),c
-        ld bc,#BC07
-        out (c),c
-        ld bc,#BD7F
         out (c),c
         ld bc,#BC0C
         out (c),c

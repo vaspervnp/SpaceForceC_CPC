@@ -67,7 +67,6 @@ start:
         RAM_WORLD
         call set_palette
         call make_row40
-        call make_halftiles
         ld hl,game_vars         ; οι αρχικές τιμές, για κάθε νέο παιχνίδι
         ld de,game_backup
         ld bc,GAME_VARS_SIZE
@@ -82,7 +81,11 @@ game_start:
         ld de,game_vars
         ld bc,GAME_VARS_SIZE
         ldir
+        ifdef START_LEVEL       ; make START=n: από άλλη πίστα, για δοκιμή
+        ld a,START_LEVEL-1
+        else
         xor a
+        endif
         ld (level),a
 level_start:
         ld sp,STACK_TOP
@@ -236,6 +239,8 @@ game_init:
         RAM_WORLD
         call level_load
         call level_intro        ; ui.asm
+        ld a,(LEVEL_HDR+LV_SKY)
+        call set_sky
         call init_actors
         call update_actors
         call update_ship_sprites
@@ -678,6 +683,7 @@ lvl7_end:
         org #4000
 snd6_data:
         include "sound.asm"
+        include "../assets/data/levels2.asm"
 snd6_end:
 
         assert snd6_end <= #8000, "bank 6 is full"
