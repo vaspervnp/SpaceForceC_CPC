@@ -1,12 +1,21 @@
-; main.asm — Space Force C, M0: hello world
+; main.asm — Space Force C, M2: engine core
 ;
-; Ελέγχει όλη την αλυσίδα: rasm -> iDSK -> Extended DSK -> emulator.
-; Mode 0 με την παλέτα του παιχνιδιού, φόντο από τα πλακίδια, τα 16
-; καρέ του σκάφους, κείμενο με τη γραμματοσειρά του HUD, και ένα σκάφος
-; στο κέντρο που στρίβει σε 8 κατευθύνσεις πάνω από το φόντο
-; (επαναφορά πλακιδίων + masked blit, συγχρονισμένα με το VSYNC).
+; Το σκάφος κινείται με κέρσορες / QAOP / joystick πάνω από το φόντο, σε
+; double buffering, κλειδωμένο στα 25 FPS. Fire (Space / joystick)
+; αλλάζει κόσμο (space <-> earth), ESC = παύση. Το HUD δείχνει τα καρέ
+; και πόσα άργησαν (late): αν το late ανεβαίνει, το καρέ δεν χωράει στα 40 ms.
+; Με make PROFILE=1 το border δείχνει τον χρόνο κάθε φάσης (hw.asm).
 ;
-; Το firmware σβήνει: DI, ROMs off, δικό μας stack. Επιστροφή δεν υπάρχει.
+; Memory map (RAM config C0 σε όλο το παιχνίδι, εκτός από τις προσβάσεις
+; στα banks):
+;   #0000-#003F  vectors (IM 1: JP int_handler στο #38)
+;   #0040-#0FFF  stack (από το #1000 προς τα κάτω)
+;   #1000-#3FFF  κώδικας + μόνιμα δεδομένα (12K)
+;   #4000-#7FFF  παράθυρο banks: εδώ μπαίνει (#7FC4-#7FC7) ένα από τα 4
+;                επιπλέον 16K του 6128, για τα δεδομένα των levels.
+;                Γι' αυτό καμία οθόνη δεν είναι εδώ.
+;   #8000-#BFFF  οθόνη, σελίδα 2
+;   #C000-#FFFF  οθόνη, σελίδα 3
 
         ifdef SNAPSHOT
         buildsna                ; αλλιώς: save σε DSK, στο τέλος
@@ -16,50 +25,195 @@
         org #1000
         run start
 
-SCREEN          equ #C000
-GA_PORT         equ #7F         ; gate array (high byte)
+        include "profile.asm"
+
+STACK_TOP       equ #1000
 PPI_B           equ #F5         ; PPI port B: bit 0 = VSYNC
 
-BG_ROWS         equ 21          ; παράθυρο παιχνιδιού: 20x21 πλακίδια (γραμμές 0-167)
-BG_COLS         equ 20
+SPEED_X         equ 1           ; bytes/καρέ = 2 pixels = 4 μονάδες οθόνης
+SPEED_Y         equ 4           ; γραμμές/καρέ = 4 μονάδες: ίδια ταχύτητα με το x
+SHIP_MAX_X      equ BG_COLS*TILES_W-SHIP_W
+SHIP_MAX_Y      equ BG_LINES-SHIP_H
+SHIP_WORLD_EARTH equ 8          ; ship_earth_n - ship_space_n
 
-SPIN_X          equ 36          ; byte x του περιστρεφόμενου σκάφους (στήλη πλακιδίου 9)
-SPIN_Y          equ 104         ; γραμμή (σειρά πλακιδίου 13)
-SPIN_DELAY      equ 6           ; καρέ ανά κατεύθυνση (25 FPS => ~4 στροφές/δευτ.)
+HUD_Y           equ BG_LINES+4
 
 start:
         di
-        ld sp,#C000
-        ld bc,#7F8C             ; mode 0, upper + lower ROM off
+        ld sp,STACK_TOP
+        ld bc,#7F00+GA_RAM_C0
         out (c),c
-
+        ld bc,#7F00+GA_MODE0
+        out (c),c
         call set_palette
-        call clear_screen
         call make_line_table
-        call draw_background
-        call draw_ship_rows
-        call draw_texts
+        call make_background
 
-        xor a
-        ld (spin_dir),a
+        ; και οι δύο σελίδες ξεκινούν ίδιες: φόντο + σταθερό HUD
+        ld a,#C0
+        ld (draw_page),a
+        call init_page
+        ld a,#80
+        ld (draw_page),a
+        call init_page
+        ld a,#C0                ; δείξε τη #C0, ζωγράφιζε στη #80
+        call show_page
+
+        ld a,(ship_x)
+        ld (old_pos+0),a
+        ld (old_pos+2),a
+        ld a,(ship_y)
+        ld (old_pos+1),a
+        ld (old_pos+3),a
+
+        call install_interrupts
+
 main_loop:
-        ; 25 FPS: ένα καρέ λογικής ανά δύο VSYNC
-        call wait_vbl
-        call read_keys
-        call wait_vbl
+        PROFILE_BORDER HW_BRIGHT_GREEN  ; είσοδος + λογική
+        call read_input
+        ld a,(input_new)
+        and IN_PAUSE
+        jr z,.nopause
+        ld a,(paused)
+        xor 1
+        ld (paused),a
+.nopause:
+        ld a,(paused)
+        or a
+        jr nz,.frame_end
 
-        ld hl,spin_timer
-        dec (hl)
-        jr nz,main_loop
-        ld (hl),SPIN_DELAY
+        ld a,(input_new)
+        and IN_FIRE
+        jr z,.nofire
+        ld a,(ship_world)
+        xor SHIP_WORLD_EARTH
+        ld (ship_world),a
+.nofire:
+        call move_ship
 
-        ld a,(spin_dir)
-        inc a
-        and 7
-        ld (spin_dir),a
+        PROFILE_BORDER HW_BRIGHT_BLUE   ; σβήσιμο
+        call page_slot
+        ld c,(hl)
+        inc hl
+        ld b,(hl)
+        ld d,SHIP_H
+        ld a,SHIP_W
+        call restore_rect
 
-        call restore_spin_bg
-        ld a,(spin_dir)
+        PROFILE_BORDER HW_RED           ; sprites
+        call draw_ship
+        call page_slot
+        ld a,(ship_x)
+        ld (hl),a
+        inc hl
+        ld a,(ship_y)
+        ld (hl),a
+
+        ld hl,(frames)
+        inc hl
+        ld (frames),hl
+
+.frame_end:
+        PROFILE_BORDER HW_YELLOW        ; HUD
+        call draw_hud
+        PROFILE_BORDER HW_BLACK         ; αναμονή για το VSYNC
+        call flip
+        jr main_loop
+
+;------------------------------------------------------------------
+
+init_page:
+        call clear_page
+        call draw_background
+        ld hl,txt_title
+        ld b,HUD_Y
+        ld c,0
+        call print_str
+        ld hl,txt_frames
+        ld b,HUD_Y+12
+        ld c,0
+        call print_str
+        ld hl,txt_late
+        ld b,HUD_Y+12
+        ld c,40
+        jp print_str
+
+draw_hud:
+        ld hl,(frames)
+        ld b,HUD_Y+12
+        ld c,14
+        call print_u16
+        ld hl,(late_frames)
+        ld b,HUD_Y+12
+        ld c,50
+        jp print_u16
+
+; out: HL -> old_pos της σελίδας που ζωγραφίζουμε (x, y)
+page_slot:
+        ld a,(draw_page)
+        and #40                 ; #80 -> 0, #C0 -> #40
+        rlca
+        rlca                    ; 0 ή 1
+        add a,a                 ; *2
+        ld l,a
+        ld h,0
+        ld de,old_pos
+        add hl,de
+        ret
+
+move_ship:
+        ; κατεύθυνση από τα πατημένα βελάκια (αντίθετα = καμία αλλαγή)
+        ld a,(input)
+        and 15
+        ld e,a
+        ld d,0
+        ld hl,dir_table
+        add hl,de
+        ld a,(hl)
+        cp #FF
+        jr z,.keep
+        ld (ship_dir),a
+.keep:
+        ld a,(input)
+        ld c,a
+        ld hl,ship_x
+        bit 2,c                 ; IN_LEFT
+        jr z,.right
+        ld a,(hl)
+        sub SPEED_X
+        jr nc,$+3
+        xor a
+        ld (hl),a
+.right: bit 3,c                 ; IN_RIGHT
+        jr z,.up
+        ld a,(hl)
+        add a,SPEED_X
+        cp SHIP_MAX_X+1
+        jr c,$+4
+        ld a,SHIP_MAX_X
+        ld (hl),a
+.up:    ld hl,ship_y
+        bit 0,c                 ; IN_UP
+        jr z,.down
+        ld a,(hl)
+        sub SPEED_Y
+        jr nc,$+3
+        xor a
+        ld (hl),a
+.down:  bit 1,c                 ; IN_DOWN
+        ret z
+        ld a,(hl)
+        add a,SPEED_Y
+        cp SHIP_MAX_Y+1
+        jr c,$+4
+        ld a,SHIP_MAX_Y
+        ld (hl),a
+        ret
+
+draw_ship:
+        ld a,(ship_dir)
+        ld hl,ship_world
+        add a,(hl)
         ld hl,ship_gfx
         ld de,SHIP_SZ
         or a
@@ -67,386 +221,61 @@ main_loop:
 .mul:   add hl,de
         dec a
         jr nz,.mul
-.got:   ld b,SPIN_Y
-        ld c,SPIN_X
+.got:   ld a,(ship_y)
+        ld b,a
+        ld a,(ship_x)
+        ld c,a
         ld d,SHIP_H
         ld a,SHIP_W
-        call blit_masked
-        jr main_loop
+        jp blit_masked
+
+; input & 15 (U=1 D=2 L=4 R=8) -> ship_space_*, #FF = κράτα την παλιά
+dir_table:
+        db #FF                  ; -
+        db ship_space_n         ; U
+        db ship_space_s         ; D
+        db #FF                  ; U D
+        db ship_space_w         ; L
+        db ship_space_nw        ; U L
+        db ship_space_sw        ; D L
+        db ship_space_w         ; U D L
+        db ship_space_e         ; R
+        db ship_space_ne        ; U R
+        db ship_space_se        ; D R
+        db ship_space_e         ; U D R
+        db #FF                  ; L R
+        db ship_space_n         ; U L R
+        db ship_space_s         ; D L R
+        db #FF                  ; όλα
+
+txt_title:  db "SPACE FORCE C - M2 ENGINE CORE",0
+txt_frames: db "FRAMES",0
+txt_late:   db "LATE",0
 
 ;------------------------------------------------------------------
-; Υλικό
+; Μεταβλητές με αρχική τιμή
 ;------------------------------------------------------------------
 
-set_palette:
-        ld hl,palette_hw
-        ld bc,#7F00
-.pen:   out (c),c               ; επιλογή pen
-        ld a,(hl)
-        inc hl
-        out (c),a               ; χρώμα (hardware value, ήδη με bit 6)
-        inc c
-        ld a,c
-        cp 16
-        jr nz,.pen
-        ld c,#10                ; border
-        out (c),c
-        ld a,(palette_hw)       ; ίδιο με το pen 0
-        out (c),a
-        ret
-
-wait_vbl:
-        ld b,PPI_B
-.out:   in a,(c)                ; περίμενε να τελειώσει το τρέχον VSYNC
-        rra
-        jr c,.out
-.in:    in a,(c)                ; και να αρχίσει το επόμενο
-        rra
-        jr nc,.in
-        ret
-
-; Διαβάζει και τις 10 γραμμές του πίνακα πλήκτρων (PSG reg 14 μέσω PPI)
-; στο keymap. Bit = 0 σημαίνει πατημένο.
-read_keys:
-        ld hl,keymap
-        ld bc,#F40E             ; PSG: επιλογή reg 14
-        out (c),c
-        ld bc,#F6C0             ; PSG: select register
-        out (c),c
-        xor a                   ; PSG: inactive
-        out (c),a
-        ld bc,#F792             ; PPI port A = είσοδος
-        out (c),c
-        ld a,#40                ; PSG read + γραμμή 0
-.line:  ld b,#F6
-        out (c),a
-        ld b,#F4
-        in e,(c)
-        ld (hl),e
-        inc hl
-        inc a
-        cp #4A
-        jr nz,.line
-        ld bc,#F782             ; PPI port A = έξοδος
-        out (c),c
-        ld bc,#F600             ; PSG: inactive
-        out (c),c
-        ret
-
-clear_screen:
-        ld hl,SCREEN
-        ld de,SCREEN+1
-        ld bc,#3FFF
-        ld (hl),0
-        ldir
-        ret
+ship_x:      db (SHIP_MAX_X/2)
+ship_y:      db (SHIP_MAX_Y/2)
+ship_dir:    db ship_space_n
+ship_world:  db 0
+old_pos:     ds 4               ; x,y ανά σελίδα (#80, #C0)
+paused:      db 0
+input:       db 0
+input_new:   db 0
+vbl_count:   db 0
+frames:      dw 0
+late_frames: dw 0
 
 ;------------------------------------------------------------------
-; Διευθύνσεις οθόνης
-;------------------------------------------------------------------
 
-; line_tab[y] = SCREEN + (y/8)*80 + (y%8)*#800
-make_line_table:
-        ld ix,line_tab
-        ld hl,SCREEN
-        ld de,80
-        ld b,25
-.row:   push hl
-        ld c,8
-.ln:    ld (ix+0),l
-        ld (ix+1),h
-        inc ix
-        inc ix
-        ld a,h
-        add a,8
-        ld h,a
-        dec c
-        jr nz,.ln
-        pop hl
-        add hl,de
-        djnz .row
-        ret
+        include "hw.asm"
+        include "screen.asm"
+        include "bg.asm"
+        include "text.asm"
 
-; in: B = γραμμή, C = byte x   out: DE = διεύθυνση   (κρατάει HL)
-scr_addr:
-        push hl
-        ld l,b
-        ld h,0
-        add hl,hl
-        ld de,line_tab
-        add hl,de
-        ld e,(hl)
-        inc hl
-        ld d,(hl)
-        ex de,hl
-        ld b,0
-        add hl,bc
-        ex de,hl
-        pop hl
-        ret
-
-;------------------------------------------------------------------
-; Blitters
-;------------------------------------------------------------------
-
-; Masked sprite, bytes πλεγμένα mask,data.
-; in: HL = γραφικό, B = γραμμή, C = byte x, D = ύψος, A = bytes δεδομένων/γραμμή
-blit_masked:
-        ld (.w+1),a
-.row:   push bc
-        push de
-        call scr_addr
-.w:     ld b,0
-.px:    ld a,(de)
-        and (hl)
-        inc hl
-        or (hl)
-        inc hl
-        ld (de),a
-        inc de
-        djnz .px
-        pop de
-        pop bc
-        inc b
-        dec d
-        jr nz,.row
-        ret
-
-; Αδιαφανές πλακίδιο 8x8 (4 bytes x 8 γραμμές).
-; in: HL = γραφικό, B = γραμμή, C = byte x
-blit_tile:
-        ld d,TILES_H
-.row:   push bc
-        push de
-        call scr_addr
-        ldi
-        ldi
-        ldi
-        ldi
-        pop de
-        pop bc
-        inc b
-        dec d
-        jr nz,.row
-        ret
-
-;------------------------------------------------------------------
-; Φόντο
-;------------------------------------------------------------------
-
-; Γεμίζει bg_map με ψευδοτυχαία αστέρια και τα ζωγραφίζει.
-draw_background:
-        ld hl,bg_map
-        ld bc,BG_ROWS*BG_COLS
-.gen:   push bc
-        push hl
-        call rand
-        pop hl
-        pop bc
-        and 15
-        cp 4
-        jr c,.star
-        xor a                   ; ti_void, τα 3/4 του ουρανού
-        jr .put
-.star:  inc a                   ; 1..4: star_s, star_m, stars_3, dust
-.put:   ld (hl),a
-        inc hl
-        dec bc
-        ld a,b
-        or c
-        jr nz,.gen
-
-        ld hl,bg_map
-        ld b,0                  ; γραμμή
-.trow:  ld c,0                  ; byte x
-.tcol:  push hl
-        push bc
-        call draw_map_tile
-        pop bc
-        pop hl
-        inc hl
-        ld a,c
-        add a,TILES_W
-        ld c,a
-        cp BG_COLS*TILES_W
-        jr nz,.tcol
-        ld a,b
-        add a,TILES_H
-        ld b,a
-        cp BG_ROWS*TILES_H
-        jr nz,.trow
-        ret
-
-; in: HL -> κελί του bg_map, B = γραμμή, C = byte x
-draw_map_tile:
-        ld a,(hl)
-        ld l,a
-        ld h,0
-        add hl,hl               ; *32 = TILES_SZ
-        add hl,hl
-        add hl,hl
-        add hl,hl
-        add hl,hl
-        ld de,tiles_gfx
-        add hl,de
-        jp blit_tile
-
-; Επαναφέρει τα πλακίδια κάτω από το περιστρεφόμενο σκάφος:
-; 6 bytes x 24 γραμμές = στήλες 9-10, σειρές 13-15.
-restore_spin_bg:
-        ld b,SPIN_Y
-.row:   ld c,SPIN_X
-.col:   push bc
-        ; κελί = (y/8)*20 + x/4
-        ld a,b
-        rrca
-        rrca
-        rrca
-        and 31
-        ld l,a
-        ld h,0
-        ld e,l
-        ld d,h
-        add hl,hl               ; *4
-        add hl,hl
-        add hl,de               ; *5
-        add hl,hl               ; *10
-        add hl,hl               ; *20
-        ld a,c
-        rrca
-        rrca
-        and 63
-        ld e,a
-        ld d,0
-        add hl,de
-        ld de,bg_map
-        add hl,de
-        call draw_map_tile
-        pop bc
-        ld a,c
-        add a,TILES_W
-        ld c,a
-        cp SPIN_X+2*TILES_W
-        jr nz,.col
-        ld a,b
-        add a,TILES_H
-        ld b,a
-        cp SPIN_Y+3*TILES_H
-        jr nz,.row
-        ret
-
-; 16-bit xorshift (J. Metcalf). out: A, HL
-rand:
-seed equ $+1
-        ld hl,#ACE1
-        ld a,h
-        rra
-        ld a,l
-        rra
-        xor h
-        ld h,a
-        ld a,l
-        rra
-        ld a,h
-        rra
-        xor l
-        ld l,a
-        xor h
-        ld h,a
-        ld (seed),hl
-        ret
-
-;------------------------------------------------------------------
-; Περιεχόμενο της δοκιμής
-;------------------------------------------------------------------
-
-; Οι 16 όψεις του σκάφους σε δύο σειρές: space (γραμμή 32), earth (γραμμή 64).
-draw_ship_rows:
-        ld hl,ship_gfx
-        ld b,32
-        call .one_row
-        ld b,64
-.one_row:
-        ld c,8
-.next:  push bc
-        ld d,SHIP_H
-        ld a,SHIP_W
-        call blit_masked        ; HL προχωράει στο επόμενο καρέ
-        pop bc
-        ld a,c
-        add a,8
-        ld c,a
-        cp 8+8*8
-        jr nz,.next
-        ret
-
-draw_texts:
-        ld hl,txt_title
-        ld b,8
-        ld c,27
-        call print_str
-        ld hl,txt_m0
-        ld b,176
-        ld c,0
-        call print_str
-        ld hl,txt_tools
-        ld b,188
-        ld c,0
-        jp print_str
-
-; in: HL = κείμενο με 0 στο τέλος, B = γραμμή, C = byte x
-print_str:
-        ld a,(hl)
-        or a
-        ret z
-        inc hl
-        push hl
-        push bc
-        sub 32
-        ld e,a
-        ld d,0
-        ld hl,font_map
-        add hl,de
-        ld l,(hl)
-        ld h,0
-        add hl,hl               ; *32 = FONT_SZ
-        add hl,hl
-        add hl,hl
-        add hl,hl
-        add hl,hl
-        ld de,font_gfx
-        add hl,de
-        ld d,FONT_H
-        ld a,FONT_W
-        call blit_masked
-        pop bc
-        pop hl
-        inc c
-        inc c
-        jr print_str
-
-; ASCII 32..95 -> γλύφος (άγνωστοι χαρακτήρες -> κενό)
-font_map:
-        db ch_32,ch_33,ch_32,ch_32,ch_32,ch_37,ch_32,ch_32     ; ' '..'''
-        db ch_40,ch_41,ch_42,ch_43,ch_44,ch_45,ch_46,ch_47     ; '('..'/'
-        db ch_48,ch_49,ch_50,ch_51,ch_52,ch_53,ch_54,ch_55     ; '0'..'7'
-        db ch_56,ch_57,ch_58,ch_32,ch_32,ch_32,ch_32,ch_63     ; '8'..'?'
-        db ch_32,ch_65,ch_66,ch_67,ch_68,ch_69,ch_70,ch_71     ; '@'..'G'
-        db ch_72,ch_73,ch_74,ch_75,ch_76,ch_77,ch_78,ch_79     ; 'H'..'O'
-        db ch_80,ch_81,ch_82,ch_83,ch_84,ch_85,ch_86,ch_87     ; 'P'..'W'
-        db ch_88,ch_89,ch_90,ch_32,ch_32,ch_32,ch_32,ch_32     ; 'X'..'_'
-
-txt_title:  db "SPACE FORCE C",0
-txt_m0:     db "M0: HELLO CPC - MODE 0, 16 PENS",0
-txt_tools:  db "RASM + IDSK + EXTENDED DSK",0
-
-spin_timer: db SPIN_DELAY
-spin_dir:   db 0
-
-;------------------------------------------------------------------
 ; Γραφικά (assets/data, παράγονται από assets/src/make_assets.py)
-;------------------------------------------------------------------
-
         include "../assets/data/palette.asm"
         include "../assets/data/ship.asm"
         include "../assets/data/tiles.asm"
@@ -458,12 +287,12 @@ code_end:
 ; Μεταβλητές χωρίς αρχική τιμή (δεν γράφονται στο αρχείο)
 ;------------------------------------------------------------------
 
-        align 2
-line_tab    equ $               ; 200 x dw
-bg_map      equ line_tab+400    ; BG_ROWS*BG_COLS bytes
+line_tab    equ code_end                ; 200 x dw
+bg_map      equ line_tab+400            ; BG_ROWS*BG_COLS bytes
 keymap      equ bg_map+BG_ROWS*BG_COLS  ; 10 bytes
+ram_end     equ keymap+10
 
-        assert keymap+10 < #C000-#100, "code + data overlap the stack"
+        assert ram_end <= #4000, "code + data overflow into the bank window"
 
 ; Το rasm γράφει το αρχείο κατευθείαν σε Extended DSK, με AMSDOS header
 ; (load = exec = #1000 από το RUN). Η διαδρομή είναι ως προς τη ρίζα του

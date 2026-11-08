@@ -3,7 +3,8 @@
 # βγάζει screenshot και κλείνει.
 #   tools/cap32_shot.sh build/SpaceForceC.dsk build/screenshot.png
 # Η αναμονή είναι πλήκτρα που «πληκτρολογούνται» μετά το run"disc:
-# PAD=n για περισσότερη/λιγότερη.
+# PAD=n για περισσότερη/λιγότερη, KEY=c για το πλήκτρο (π.χ. KEY=p: το
+# σκάφος πάει δεξιά όσο «πληκτρολογείται»).
 set -e
 HERE=$(dirname "$(realpath "$0")")
 DSK=$(realpath "$1")
@@ -11,7 +12,8 @@ OUT=$(realpath -m "${2:-build/screenshot.png}")
 PAD=${PAD:-400}
 SHOTS=$HOME/snap/caprice32/current/screenshots
 mkdir -p "$(dirname "$OUT")"
-FILL=$(printf 'z%.0s' $(seq 1 "$PAD"))
+KEY=${KEY:-z}
+FILL=$(printf "$KEY%.0s" $(seq 1 "$PAD"))
 CMD="run\"disc
 $FILL\\(CAP32_SCRNSHOT)\\(CAP32_EXIT)"
 MARK=$(mktemp)

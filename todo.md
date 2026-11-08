@@ -11,7 +11,7 @@
 | `iDSK` (v0.20, `/usr/local/bin/iDSK`) | Προσθήκη αρχείων και έλεγχος της δισκέτας (η δισκέτα δημιουργείται από το rasm, δες M0) |
 | Extended DSK (EDSK) | Τελικό format δισκέτας (`SpaceForceC.dsk`) |
 | Caprice32 (snap, μέσω `tools/cap32.sh`) | Κύριος emulator για testing/debug |
-| CPCemu | Δεύτερος emulator για cross-check (δεν βρέθηκε στο PATH — να επιβεβαιωθεί η εντολή εκκίνησης) |
+| CPCEMU 2.5 (Linux, μέσω `tools/cpcemu.sh`) | Δεύτερος emulator για cross-check |
 | Aseprite MCP | Pixel art: sprites, tiles, fonts, HUD, οθόνες, με παλέτα CPC |
 | Blender MCP | 3D μοντέλα (πλοίο, bosses, asteroids) → render σε πολλές γωνίες → βάση για τα sprites στο Aseprite |
 
@@ -27,7 +27,7 @@
 - [x] `make shot` → Caprice32 χωρίς παράθυρο, `build/screenshot.png` (`tools/cap32_shot.sh`)
 - [x] Hello world (`src/main.asm`): Mode 0, παλέτα μέσω gate array, φόντο από πλακίδια, οι 16 όψεις του σκάφους, κείμενο με τη γραμματοσειρά, περιστρεφόμενο σκάφος πάνω από το φόντο στα 25 FPS
 - [x] Loader: `DISC.BAS` (`RUN"SFC.BIN"`)· το `SFC.BIN` φορτώνει και ξεκινάει στο `&1000`
-- [ ] `make run-cpcemu`: ο στόχος υπάρχει, αλλά το CPCemu δεν βρέθηκε στο PATH (`make run-cpcemu CPCEMU=/path/to/cpcemu`)
+- [x] `make run-cpcemu`: CPCEMU 2.5 για Linux όπως στο V-OS-CPC (`tools/cpcemu.sh`): αποσυμπιέζεται από το tarball στο `build/cpcemu`, CPC 6128 με τη δισκέτα στο A: και autostart. Ξεκινάει, αλλά το παράθυρό του δεν πιάνεται σε screenshot, οπότε η εικόνα ελέγχεται με το μάτι
 
 Ευρήματα για το Caprice32 του snap:
 - Ο `caprice32.launcher` περνάει μόνο τα δύο πρώτα ορίσματα ως δισκέτες και **πετάει** τα `-O`/`-a`. Το `tools/cap32.sh` καλεί το `cap32` απευθείας μέσα στο snap
@@ -45,13 +45,21 @@
 - [ ] Blender: setup σκηνής μόνο για μεγάλα αντικείμενα — σε 12x24 pixels δεν υπάρχει τίποτα να μοντελοποιήσεις, κάθε pixel είναι απόφαση
 
 ## M2 — Engine core
-- [ ] Memory map 128K: δύο screen buffers (π.χ. `&C000` και `&4000`), code, bank switching (`&7Fxx`) για levels/γραφικά
-- [ ] Interrupt handler (300Hz), συγχρονισμός με VSYNC, frame lock 25 FPS (κάθε 2 frames)
-- [ ] Double buffering: swap visible/back buffer μέσω CRTC R12/R13 στο VSYNC
-- [ ] Ρύθμιση CRTC για game area + HUD (πιθανή μείωση πλάτους οθόνης για ταχύτητα)
-- [ ] Ανάγνωση πληκτρολογίου/joystick μέσω PPI/PSG (redefinable keys)
-- [ ] Πίνακας διευθύνσεων γραμμών οθόνης (lookup table) για γρήγορη πρόσβαση
-- [ ] Profiling: raster bars (αλλαγή border color) για μέτρηση χρόνου ανά υποσύστημα
+**Έγινε.** Demo: το σκάφος οδηγείται πάνω από το φόντο στα 25 FPS, με double buffering, και το HUD δείχνει τα καρέ και πόσα άργησαν.
+- [x] Memory map 128K: **οθόνες στα `&8000` και `&C000`**, όχι `&4000`. Το `&4000-&7FFF` είναι το μόνο παράθυρο όπου μπαίνουν τα επιπλέον 64K (`&7FC4-&7FC7`), άρα μένει για τα δεδομένα των levels. Κώδικας + μόνιμα δεδομένα `&1000-&3FFF` (12K, με assert), stack κάτω από το `&1000`. Δες την κεφαλίδα του `src/main.asm`
+- [x] Interrupt handler IM 1 (300Hz) που μετράει μόνο τα VSYNC· frame lock 25 FPS (`FRAME_VBLS`)
+- [x] Double buffering: το `flip` γράφει τη σελίδα στο R12 αμέσως μετά το VSYNC (το R12 κλειδώνει στην αρχή του καρέ, ~8 σειρές αργότερα). Αν το καρέ αργήσει, περιμένει το επόμενο VSYNC αντί να γράψει σε ό,τι εμφανίζεται, και μετράει `late_frames`
+- [x] Πληκτρολόγιο/joystick μέσω PPI/PSG σε ενέργειες (`IN_UP`...`IN_PAUSE`), με κρατημένα και «μόλις πατήθηκαν». Κέρσορες/QAOP/Space, W όπλο, ESC παύση, joystick 0. Οι αντιστοιχίσεις είναι στη RAM (`key_bindings`) για το μενού του M9
+- [x] Πίνακας διευθύνσεων γραμμών με offsets ως προς τη σελίδα: H = offset OR σελίδα, ίδια ρουτίνα για τις δύο
+- [x] Profiling: `make PROFILE=1` αλλάζει το border ανά φάση (πράσινο είσοδος/λογική, μπλε σβήσιμο, κόκκινο sprites, κίτρινο HUD, μαύρο αναμονή)
+- [x] Σβήσιμο sprite με επαναφορά των πλακιδίων κάτω του (`restore_rect`), ξεχωριστή θέση ανά σελίδα
+- [ ] Ρύθμιση CRTC για game area + HUD: μένει η standard 80x25. Το πλάτος και το R12/R13 offset αποφασίζονται στο M3 μαζί με το hardware scroll
+- [ ] Ο χρόνος κάθε φάσης σε αριθμούς: τα raster bars δείχνουν μόνο ό,τι πέφτει στο ορατό border. Η δουλειά αρχίζει στο VSYNC, άρα οι πρώτες ~40 γραμμές του καρέ δεν φαίνονται
+
+Ευρήματα:
+- Η ταχύτητα του σκάφους είναι 1 byte (2 pixels) οριζόντια και **4 γραμμές** κάθετα. Στο Mode 0 το pixel είναι 2:1, άρα 2 pixels οριζόντια = 4 μονάδες = 4 γραμμές, και η διαγώνιος βγαίνει στις 45 μοίρες στην οθόνη
+- Το HUD με 10 ψηφία ανά καρέ (`print_u16`: σβήσιμο + masked γλύφος) είναι η πιο αργή φάση στα raster bars. Στο M9 το HUD πρέπει να ξαναγράφει μόνο ό,τι άλλαξε, και μόνο στις δύο σελίδες τη φορά
+- Τα πλήκτρα διαβάζονται στο main loop. Όταν μπει ο music player στο interrupt (M10), η ανάγνωση πρέπει να πάει κι αυτή εκεί, γιατί μοιράζονται το PSG
 
 ## M3 — Multi-directional scrolling (τεχνική απόφαση + υλοποίηση)
 **ΜΕΤΡΗΜΕΝΟ: το software redraw είναι ήδη εκτός.** Πλήρες ξαναζωγράφισμα

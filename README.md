@@ -6,8 +6,9 @@ Arcade multi-directional scrolling shooter για τον **Amstrad CPC 6128** σ
 
 ## Κατάσταση
 
-Το M0 (build pipeline) έχει γίνει: το `src/main.asm` είναι ένα hello world
-που δείχνει τα γραφικά του Level 1 σε Mode 0 και τρέχει από Extended DSK.
+Έχουν γίνει το M0 (build pipeline) και το M2 (engine core). Το demo οδηγεί
+το σκάφος πάνω από το φόντο στα 25 FPS με double buffering. Χειρισμός:
+κέρσορες / QAOP / joystick, Fire = αλλαγή space/earth, ESC = παύση.
 
 - [design_document.md](design_document.md): το game design document
 - [todo.md](todo.md): τα milestones της ανάπτυξης
@@ -57,7 +58,8 @@ make
 | `make run` | Caprice32 με τη δισκέτα και autorun |
 | `make snap` / `make run-snap` | snapshot (`build/sfc.sna`) που ξεκινάει κατευθείαν |
 | `make shot` | Caprice32 χωρίς παράθυρο, γράφει `build/screenshot.png` |
-| `make run-cpcemu` | CPCemu (`CPCEMU=/path/to/cpcemu` αν δεν είναι στο PATH) |
+| `make run-cpcemu` | CPCEMU 2.5 για Linux (`CPCEMU_TGZ=` το tarball από το cpc-emu.org) |
+| `make PROFILE=1 ...` | raster bars στο border: ο χρόνος κάθε φάσης του καρέ |
 | `make assets` | ξαναπαράγει τα `assets/data` από τα `assets/src` |
 
 Το Caprice32 είναι το snap package. Καλείται μέσω του `tools/cap32.sh`, γιατί ο `caprice32.launcher` πετάει τις επιλογές της γραμμής εντολών.
