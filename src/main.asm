@@ -1,9 +1,10 @@
-; main.asm — Space Force C, M3: multi-directional scrolling
+; main.asm — Space Force C, M3: multi-directional scrolling + HUD
 ;
 ; Το σκάφος κινείται με κέρσορες / QAOP / joystick σε χάρτη 64x48
 ; πλακιδίων (4 οθόνες επί 2) και η κάμερα το ακολουθεί με hardware scroll
-; (scroll.asm), σε double buffering, κλειδωμένο στα 25 FPS. Fire (Space /
-; joystick) αλλάζει κόσμο (space <-> earth), ESC = παύση.
+; (scroll.asm), σε double buffering, κλειδωμένο στα 25 FPS. Από κάτω, HUD
+; σε split screen (hw.asm, screen.asm). Fire (Space / joystick) αλλάζει
+; κόσμο (space <-> earth), ESC = παύση.
 ; Με make PROFILE=1 το border δείχνει τον χρόνο κάθε φάσης (hw.asm).
 ;
 ; Memory map (RAM config C0 σε όλο το παιχνίδι, εκτός από τις προσβάσεις
@@ -13,7 +14,8 @@
 ;   #1000-#3FFF  κώδικας + μόνιμα δεδομένα (12K)
 ;   #4000-#7FFF  παράθυρο banks: εδώ μπαίνει (#7FC4-#7FC7) ένα από τα 4
 ;                επιπλέον 16K του 6128, για τα δεδομένα των levels.
-;                Γι' αυτό καμία οθόνη δεν είναι εδώ.
+;                Στη φυσική μνήμη (C0): το HUD στα #x6C0-#x7FF κάθε
+;                block των 2K, τα μισά πλακίδια στο #4000-#41FF.
 ;   #8000-#BFFF  οθόνη, σελίδα 2
 ;   #C000-#FFFF  οθόνη, σελίδα 3
 
@@ -54,10 +56,12 @@ start:
         out (c),c
         call install_interrupts ; πριν από όλα: το copy_half κάνει EI
         call set_palette
-        call make_line_table
         call make_row40
         call make_halftiles
         call make_map
+
+        call clear_hud
+        call draw_hud_static
 
         ; και οι δύο σελίδες ξεκινούν με όλη την κάμερα ζωγραφισμένη
         ld a,#C0
@@ -131,6 +135,11 @@ main_loop:
         inc hl
         ld (frames),hl
 
+        PROFILE_BORDER HW_YELLOW        ; HUD: μία φορά ανά 16 καρέ
+        ld a,(frames)
+        and 15
+        call z,draw_hud
+
         PROFILE_BORDER HW_BLACK         ; αναμονή για το VSYNC
         call flip
         jp main_loop
@@ -152,6 +161,34 @@ init_page:
         ld (ix+BUF_OY),l
         ld (ix+BUF_OY+1),h
         jp draw_view
+
+draw_hud_static:
+        ld hl,txt_title
+        ld b,8
+        ld c,0
+        call print_str
+        ld hl,txt_frames
+        ld b,16
+        ld c,0
+        call print_str
+        ld hl,txt_late
+        ld b,16
+        ld c,40
+        jp print_str
+
+draw_hud:
+        ld hl,(frames)
+        ld b,16
+        ld c,14
+        call print_u16
+        ld hl,(late_frames)
+        ld b,16
+        ld c,50
+        jp print_u16
+
+txt_title:  db "SPACE FORCE C - M3 SCROLL + HUD",0
+txt_frames: db "FRAMES",0
+txt_late:   db "LATE",0
 
 ; out: IX -> κατάσταση της σελίδας που ζωγραφίζουμε
 page_buf:
@@ -311,12 +348,13 @@ dir_table:
         include "screen.asm"
         include "scroll.asm"
         include "map.asm"
-        ; text.asm + font.asm: ξαναμπαίνουν με το HUD (split screen)
+        include "text.asm"
 
 ; Γραφικά (assets/data, παράγονται από assets/src/make_assets.py)
         include "../assets/data/palette.asm"
         include "../assets/data/ship.asm"
         include "../assets/data/tiles.asm"
+        include "../assets/data/font.asm"
 
 ;------------------------------------------------------------------
 ; Μεταβλητές με αρχική τιμή
@@ -335,6 +373,9 @@ paused:      db 0
 input:       db 0
 input_new:   db 0
 vbl_count:   db 0
+int_idx:     db #80
+game_r12:    db #20
+game_r13:    db 0
 frames:      dw 0
 late_frames: dw 0
 bw_x:        db 0               ; blit_world
@@ -351,12 +392,11 @@ code_end:
 ; Μεταβλητές χωρίς αρχική τιμή (δεν γράφονται στο αρχείο)
 ;------------------------------------------------------------------
 
-line_tab    equ code_end                ; 200 x dw
-row40       equ line_tab+400            ; MAP_H x dw
+row40       equ code_end                ; MAP_H x dw
 keymap      equ row40+2*MAP_H           ; 10 bytes
 bg_map      equ (keymap+10+255)&#FF00   ; MAP_W*MAP_H, στοιχισμένο σε 256
-halftiles   equ bg_map+MAP_W*MAP_H      ; 512 bytes, στοιχισμένο σε 256
-ram_end     equ halftiles+512
+ram_end     equ bg_map+MAP_W*MAP_H
+halftiles   equ #4000                   ; 512 bytes, στη φυσική μνήμη (C0)
 
         assert ram_end <= #4000, "code + data overflow into the bank window"
 

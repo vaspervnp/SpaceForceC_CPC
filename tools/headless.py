@@ -12,8 +12,9 @@
 
     python3 tools/headless.py [build/SpaceForceC.dsk]
 
-CPCHEADLESS=/path για άλλον φάκελο του emulator. Βγαίνει με 1 αν κάποιος
-έλεγχος αποτύχει.
+CPCHEADLESS=/path για άλλον φάκελο του emulator, CRTC=0/1/2 για τύπο CRTC
+(το split screen του HUD είναι το σημείο όπου διαφέρουν). Βγαίνει με 1 αν
+κάποιος έλεγχος αποτύχει.
 """
 
 import os
@@ -27,7 +28,7 @@ DSK = sys.argv[1] if len(sys.argv) > 1 else os.path.join(ROOT, "build/SpaceForce
 SYM = os.path.join(ROOT, "build/sfc.sym")
 TILES = open(os.path.join(ROOT, "assets/data/tiles.bin"), "rb").read()
 
-MAP_W, MAP_H, VIEW_W, VIEW_H = 64, 48, 40, 25
+MAP_W, MAP_H, VIEW_W, VIEW_H = 64, 48, 40, 21
 BUF_SIZE = 5
 SHIP_W, SHIP_H = 6, 24
 
@@ -106,6 +107,9 @@ def run_measured(c, s, frames):
 def main():
     s = symbols(SYM)
     c = CPC()
+    if "CRTC" in os.environ:
+        c.crtc_type = int(os.environ["CRTC"])
+    print("CRTC τύπος %d" % c.crtc_type)
     c.run_frames(150)
     c.insert_disc(DSK)
     c.type_text('RUN"DISC\n')

@@ -5,10 +5,39 @@ GA_RAM_C0       equ #C0         ; RAM config 0: τα 64K της κύριας μ�
 FRAME_VBLS      equ 2           ; 50 Hz / 2 = 25 FPS
 
 ;------------------------------------------------------------------
-; Interrupts: IM 1, ο handler μετράει μόνο τα VSYNC.
-; Από τα 6 interrupts του καρέ (300 Hz) μόνο ένα πέφτει μέσα στο VSYNC
-; (2 γραμμές μετά την αρχή του), άρα ο έλεγχος του PPI αρκεί.
+; Interrupts και split screen
+;
+; Τα 6 interrupts του καρέ (300 Hz, ανά 52 γραμμές) είναι συγχρονισμένα με
+; το VSYNC: το ένα πέφτει 2 γραμμές μετά την αρχή του, και μόνο αυτό βλέπει
+; το bit του VSYNC στο PPI. Από εκεί μετράμε int_idx 0-5.
+;
+; Split screen: δύο «καρέ» του CRTC μέσα σε κάθε καρέ των 50 Hz (312 γραμμές,
+; 39 σειρές), μετρημένα από την πρώτη γραμμή του παιχνιδιού:
+;
+;   σειρές  0-20  καρέ A: παιχνίδι, R12/R13 = κάμερα (scroll)    γρ.   0-167
+;   σειρές 21-38  καρέ B: HUD (4 σειρές), border, VSYNC          γρ. 168-311
+;
+;   int_idx 0  γρ. 242  VSYNC (στη σειρά 30, όπως στη standard ρύθμιση).
+;                       R6 = 21 για το επόμενο A: το B έχει ήδη περάσει τη
+;                       σειρά 4 του, και το R6 ελέγχεται μόνο όταν ο μετρητής
+;                       σειρών το συναντήσει. Γραμμένο μέσα στο A θα ερχόταν
+;                       αργά: η εικόνα σβήνει στη σειρά 4 ως το επόμενο καρέ.
+;   int_idx 2  γρ.  34  μέσα στο A: R4 = 20 (το A τελειώνει στη σειρά 20),
+;                       R7 = 127 (χωρίς VSYNC), R12/R13 = HUD -> στην αρχή του B
+;   int_idx 5  γρ. 190  μέσα στο B (σειρά 2): R4 = 17, R7 = 9 (VSYNC στη
+;                       γρ. 240), R6 = 4 (το HUD), R12/R13 = κάμερα -> στην
+;                       αρχή του επόμενου A
+;
+; Κάθε εγγραφή γίνεται μακριά από την πρώτη σειρά του καρέ (εκεί ο CRTC 1
+; διαβάζει το R12/R13) και πριν φτάσει ο μετρητής στο R4/R7 που αλλάζει, άρα
+; δουλεύει σε όλους τους τύπους CRTC. Η πρώτη φορά ξεκινάει από τη standard
+; ρύθμιση (R4 = 38, R7 = 30) και κουμπώνει από το πρώτο καρέ.
 ;------------------------------------------------------------------
+
+GAME_ROWS       equ VIEW_H      ; 21
+HUD_ROWS        equ 4
+FRAME_ROWS      equ 39
+VSYNC_ROW       equ 30
 
 install_interrupts:
         di
@@ -19,6 +48,8 @@ install_interrupts:
         ld (#39),hl
         xor a
         ld (vbl_count),a
+        ld a,#80                ; ως το πρώτο VSYNC: κανένα split (δεν φτάνει 2 ή 5)
+        ld (int_idx),a
         ei
         ret
 
@@ -28,11 +59,76 @@ int_handler:
         ld b,PPI_B
         in a,(c)
         rra
-        jr nc,.done
+        jr nc,.next
         ld a,(vbl_count)
         inc a
         ld (vbl_count),a
-.done:  pop bc
+        ld bc,#BC06
+        out (c),c
+        ld bc,#BD00+GAME_ROWS
+        out (c),c
+        xor a
+        jr .store
+.next:  ld a,(int_idx)
+        inc a
+        cp 2
+        jr z,.split_a
+        cp 5
+        jr z,.split_b
+.store: ld (int_idx),a
+        pop bc
+        pop af
+        ei
+        ret
+
+.split_a:
+        ld (int_idx),a
+        ld bc,#BC04
+        out (c),c
+        ld bc,#BD00+GAME_ROWS-1
+        out (c),c
+        ld bc,#BC07
+        out (c),c
+        ld bc,#BD7F
+        out (c),c
+        ld bc,#BC0C
+        out (c),c
+        ld bc,#BD00+(HUD_PAGE/4&#30)+(HUD_MA/256)
+        out (c),c
+        ld bc,#BC0D
+        out (c),c
+        ld bc,#BD00+(HUD_MA&255)
+        out (c),c
+        pop bc
+        pop af
+        ei
+        ret
+
+.split_b:
+        ld (int_idx),a
+        ld bc,#BC04
+        out (c),c
+        ld bc,#BD00+FRAME_ROWS-GAME_ROWS-1
+        out (c),c
+        ld bc,#BC07
+        out (c),c
+        ld bc,#BD00+VSYNC_ROW-GAME_ROWS
+        out (c),c
+        ld bc,#BC06
+        out (c),c
+        ld bc,#BD00+HUD_ROWS
+        out (c),c
+        ld bc,#BC0C
+        out (c),c
+        ld a,(game_r12)
+        inc b
+        out (c),a
+        ld bc,#BC0D
+        out (c),c
+        ld a,(game_r13)
+        inc b
+        out (c),a
+        pop bc
         pop af
         ei
         ret
@@ -41,13 +137,14 @@ int_handler:
 ; Double buffering
 ;
 ; Ζωγραφίζουμε πάντα στη σελίδα draw_page (#80 ή #C0) ενώ ο CRTC δείχνει
-; την άλλη. Το flip περιμένει να περάσουν FRAME_VBLS καρέ, γράφει στο R12
+; την άλλη. Το flip περιμένει να περάσουν FRAME_VBLS καρέ, γράφει στο R12/R13
 ; τη σελίδα που μόλις ζωγραφίστηκε και αλλάζει draw_page.
 ;
-; Το R12/R13 κλειδώνει στην αρχή του επόμενου καρέ, που είναι ~8 σειρές
-; χαρακτήρων ΜΕΤΑ το VSYNC (στο πάνω border). Από το VSYNC μέχρι εκεί η
-; παλιά σελίδα δεν εμφανίζεται πια, οπότε μπορούμε να αρχίσουμε να
-; γράφουμε σε αυτήν αμέσως.
+; Το flip τρέχει αμέσως μετά το VSYNC (γρ. 240), στο καρέ B: το R12/R13
+; κλειδώνει στην αρχή του επόμενου καρέ A (γρ. 312) και η παλιά σελίδα δεν
+; εμφανίζεται πια, οπότε μπορούμε να γράφουμε σε αυτήν αμέσως. Το int_idx 5
+; ξαναγράφει τις ίδιες τιμές (game_r12/13) σε κάθε καρέ, γιατί το int_idx 2
+; τις αντικαθιστά με του HUD.
 ;------------------------------------------------------------------
 
 flip:
@@ -83,6 +180,11 @@ show_page:
         rrca
         and #30
         or h                    ; MA bits 9-8
+        ld (game_r12),a
+        ld a,l
+        ld (game_r13),a
+        di                      ; ο handler επιλέγει κι αυτός registers
+        ld a,(game_r12)
         ld bc,#BC0C
         out (c),c
         inc b
@@ -91,6 +193,7 @@ show_page:
         out (c),c
         inc b
         out (c),l
+        ei
         ret
 
 ;------------------------------------------------------------------

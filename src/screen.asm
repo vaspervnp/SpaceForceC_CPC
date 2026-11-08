@@ -1,55 +1,67 @@
-; screen.asm — διευθύνσεις οθόνης και blitters
+; screen.asm — η σταθερή (χωρίς scroll) οθόνη του HUD και οι blitters της
 ;
-; Όλα γράφουν στη σελίδα draw_page (#80 ή #C0), δηλαδή στο back buffer.
-; Ο line_tab κρατάει offsets ως προς την αρχή της σελίδας (#0000-#3FFF),
-; οπότε η ίδια ρουτίνα δουλεύει και για τις δύο: H = offset_h OR σελίδα.
+; Το HUD είναι το δεύτερο «καρέ» του CRTC (split screen, hw.asm): 4 σειρές x
+; 40 words στη φυσική σελίδα #4000, στα MA 864-1023, δηλαδή στα τελευταία
+; 320 bytes κάθε block των 2K (#x6C0-#x7FF). Το video διαβάζει πάντα την
+; κύρια μνήμη, οπότε το HUD φαίνεται ακόμα και όταν η CPU έχει βάλει άλλο
+; bank στο #4000. Δεν έχει double buffer: γράφεται σπάνια και σε λίγα σημεία.
 
-; line_tab[y] = (y/8)*80 + (y%8)*#800
-make_line_table:
-        ld ix,line_tab
-        ld hl,0
-        ld de,80
-        ld b,25
-.row:   push hl
-        ld c,8
-.ln:    ld (ix+0),l
-        ld (ix+1),h
-        inc ix
-        inc ix
+HUD_PAGE        equ #40
+HUD_MA          equ 1024-HUD_ROWS*VIEW_W        ; 864
+HUD_OFFSET      equ HUD_MA*2                    ; #6C0
+HUD_LINES       equ HUD_ROWS*8                  ; 32
+
+; in: B = γραμμή του HUD (0-31), C = byte x   out: DE   (κρατάει HL)
+scr_addr:
+        push hl
+        ld a,b
+        and #F8                 ; σειρά*8
+        ld l,a
+        ld h,0
+        add hl,hl               ; σειρά*16
+        ld e,l
+        ld d,h
+        add hl,hl
+        add hl,hl               ; σειρά*64
+        add hl,de               ; σειρά*80
+        ld e,c
+        ld d,0
+        add hl,de
+        ld de,HUD_OFFSET
+        add hl,de               ; <= #7FF
+        ld a,b
+        and 7
+        add a,a
+        add a,a
+        add a,a
+        or h
+        or HUD_PAGE
+        ld d,a
+        ld e,l
+        pop hl
+        ret
+
+; Καθαρίζει το HUD (τα 320 bytes σε καθένα από τα 8 blocks).
+clear_hud:
+        ld hl,HUD_PAGE*256+HUD_OFFSET
+        ld b,8
+.block: push bc
+        push hl
+        ld d,h
+        ld e,l
+        inc de
+        ld (hl),0
+        ld bc,HUD_ROWS*VIEW_W*2-1
+        ldir
+        pop hl
         ld a,h
         add a,8
         ld h,a
-        dec c
-        jr nz,.ln
-        pop hl
-        add hl,de
-        djnz .row
+        pop bc
+        djnz .block
         ret
 
-; in: B = γραμμή, C = byte x   out: DE = διεύθυνση στο back buffer
-; (κρατάει HL, χαλάει A, B)
-scr_addr:
-        push hl
-        ld l,b
-        ld h,0
-        add hl,hl
-        ld de,line_tab
-        add hl,de
-        ld e,(hl)
-        inc hl
-        ld a,(hl)
-        ld hl,draw_page
-        or (hl)                 ; σελίδα: #80 ή #C0, την αλλάζει το flip
-        ld d,a
-        ld a,e                  ; + x: μέσα σε μία γραμμή, δεν περνάει όριο 2K
-        add a,c
-        ld e,a
-        jr nc,.ok
-        inc d
-.ok:    pop hl
-        ret
-
-; Καθαρίζει το back buffer.
+; Καθαρίζει το back buffer του παιχνιδιού.
 clear_page:
         ld a,(draw_page)
         ld h,a
@@ -59,71 +71,4 @@ clear_page:
         ld bc,#3FFF
         ld (hl),0
         ldir
-        ret
-
-;------------------------------------------------------------------
-; Blitters
-;------------------------------------------------------------------
-
-; Masked sprite, bytes πλεγμένα mask,data.
-; in: HL = γραφικό, B = γραμμή, C = byte x, D = ύψος, A = bytes δεδομένων/γραμμή
-; out: HL = αμέσως μετά το γραφικό
-blit_masked:
-        ld (.w+1),a
-.row:   push bc
-        push de
-        call scr_addr
-.w:     ld b,0
-.px:    ld a,(de)
-        and (hl)
-        inc hl
-        or (hl)
-        inc hl
-        ld (de),a
-        inc de
-        djnz .px
-        pop de
-        pop bc
-        inc b
-        dec d
-        jr nz,.row
-        ret
-
-; Αδιαφανές πλακίδιο 8x8 (4 bytes x 8 γραμμές).
-; in: HL = γραφικό, B = γραμμή, C = byte x
-blit_tile:
-        ld d,TILES_H
-.row:   push bc
-        push de
-        call scr_addr
-        ldi
-        ldi
-        ldi
-        ldi
-        pop de
-        pop bc
-        inc b
-        dec d
-        jr nz,.row
-        ret
-
-; Γεμίζει ορθογώνιο με το byte E.
-; in: B = γραμμή, C = byte x, D = ύψος, A = πλάτος σε bytes, E = τιμή
-fill_rect:
-        ld (.w+1),a
-        ld a,e
-        ld (.v+1),a
-.row:   push bc
-        push de
-        call scr_addr
-.w:     ld b,0
-.v:     ld a,0
-.px:    ld (de),a
-        inc de
-        djnz .px
-        pop de
-        pop bc
-        inc b
-        dec d
-        jr nz,.row
         ret

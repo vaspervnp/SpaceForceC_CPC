@@ -1,4 +1,9 @@
 ; text.asm — κείμενο με τη γραμματοσειρά 4x8 του HUD (40 χαρακτήρες/γραμμή)
+;
+; Το HUD είναι πάντα μαύρο από κάτω, οπότε ο γλύφος γράφεται αδιαφανής: μόνο
+; τα bytes δεδομένων (pen 0 = μαύρο). Σβήνει έτσι και ό,τι ήταν εκεί πριν,
+; χωρίς καθάρισμα. Η γραμμή B είναι πολλαπλάσιο του 8 (όριο σειράς), ώστε η
+; διεύθυνση να υπολογίζεται μία φορά ανά γλύφο: ~0,2 ms ο χαρακτήρας.
 
 ; in: HL = κείμενο με 0 στο τέλος, B = γραμμή, C = byte x
 print_str:
@@ -29,24 +34,29 @@ print_char:
         add hl,hl
         add hl,hl
         add hl,hl
-        ld de,font_gfx
+        ld de,font_gfx+1        ; τα bytes δεδομένων (mask,data)
         add hl,de
-        ld d,FONT_H
-        ld a,FONT_W
-        jp blit_masked
+        call scr_addr
+        ld b,FONT_H
+.line:  ld a,(hl)
+        ld (de),a
+        inc hl
+        inc hl
+        inc de                  ; μέσα στο block: γραμμικό ως το #x7FF
+        ld a,(hl)
+        ld (de),a
+        inc hl
+        inc hl
+        dec de
+        ld a,d
+        add a,8
+        ld d,a
+        djnz .line
+        ret
 
-; Τυπώνει αριθμό 0-65535 με 5 ψηφία, σβήνοντας πρώτα το φόντο (το HUD
-; ξαναγράφεται σε κάθε καρέ, και ο masked γλύφος δεν σβήνει τον παλιό).
+; Τυπώνει αριθμό 0-65535 με 5 ψηφία.
 ; in: HL = αριθμός, B = γραμμή, C = byte x
 print_u16:
-        push hl
-        push bc
-        ld d,FONT_H
-        ld a,5*FONT_W
-        ld e,0
-        call fill_rect
-        pop bc
-        pop hl
         ld de,10000
         call .digit
         ld de,1000
