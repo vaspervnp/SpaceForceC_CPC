@@ -7,9 +7,11 @@ Arcade multi-directional scrolling shooter για τον **Amstrad CPC 6128** σ
 ## Κατάσταση
 
 Έχουν γίνει το M0 (build pipeline), το M2 (engine core), το M3
-(multi-directional scrolling) και το M4 (sprite engine). Το demo οδηγεί το
-σκάφος σε χάρτη 4x2 οθονών με hardware scroll, στα 25 FPS με double
-buffering, με HUD σε split screen και 10 εχθρούς που κινούνται στον κόσμο.
+(multi-directional scrolling), το M4 (sprite engine) και το M5 (το σκάφος).
+Το demo οδηγεί το σκάφος, με αδράνεια και φλόγα εξάτμισης, σε χάρτη 4x2
+οθονών με hardware scroll, στα 25 FPS με double buffering, με HUD σε split
+screen και 10 εχθρούς που κινούνται στον κόσμο. Στη Γη (Fire) το σκάφος
+αφήνει καπνό· στις απότομες στροφές οι πιλότοι ουρλιάζουν.
 Χειρισμός: κέρσορες / QAOP / joystick, Fire = αλλαγή space/earth, ESC = παύση.
 
 - [design_document.md](design_document.md): το game design document

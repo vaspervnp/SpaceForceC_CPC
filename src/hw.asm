@@ -328,12 +328,13 @@ key_bindings:
         ; W: όπλο, ESC: παύση
         db 7,%00001000,IN_WEAPON
         db 8,%00000100,IN_PAUSE
-        ; joystick 0
+        ; joystick 0: και τα δύο κουμπιά = fire (τα joysticks με ένα κουμπί
+        ; δεν δίνουν όλα το ίδιο bit· το όπλο αλλάζει με το W)
         db 9,%00000001,IN_UP
         db 9,%00000010,IN_DOWN
         db 9,%00000100,IN_LEFT
         db 9,%00001000,IN_RIGHT
         db 9,%00100000,IN_FIRE
-        db 9,%00010000,IN_WEAPON
+        db 9,%00010000,IN_FIRE
         db #FF
         ds 3*8                  ; χώρος για επιπλέον αντιστοιχίσεις

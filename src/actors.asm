@@ -62,10 +62,6 @@ init_actors:
 .on:    ld (iy+SPR_FLAGS),1
         add iy,de
         djnz .on
-        ld iy,spr_table+SHIP_SLOT*SPR_SIZE
-        ld (iy+SPR_FLAGS),1
-        ld (iy+SPR_W),SHIP_W
-        ld (iy+SPR_H),SHIP_H
         ret
 
 ; Κίνηση + γραφή στο spr_table (θέση, γραφικό, μέγεθος).
@@ -154,24 +150,4 @@ update_actors:
         pop bc
         dec b
         jp nz,.en
-
-        ; το σκάφος
-        ld iy,spr_table+SHIP_SLOT*SPR_SIZE
-        ld a,(ship_x)
-        ld (iy+SPR_X),a
-        ld hl,(ship_y)
-        ld (iy+SPR_Y),l
-        ld (iy+SPR_Y+1),h
-        ld a,(ship_dir)
-        ld hl,ship_world
-        add a,(hl)
-        ld hl,ship_gfx
-        ld de,SHIP_SZ
-        or a
-        jr z,.got
-.mul:   add hl,de
-        dec a
-        jr nz,.mul
-.got:   ld (iy+SPR_GFX),l
-        ld (iy+SPR_GFX+1),h
         ret

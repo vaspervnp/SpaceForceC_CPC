@@ -1,11 +1,13 @@
-; main.asm — Space Force C, M4: sprite engine
+; main.asm — Space Force C, M5: το σκάφος
 ;
 ; Το σκάφος κινείται με κέρσορες / QAOP / joystick σε χάρτη 64x48
 ; πλακιδίων (4 οθόνες επί 2) και η κάμερα το ακολουθεί με hardware scroll
 ; (scroll.asm), σε double buffering, κλειδωμένο στα 25 FPS. Από κάτω, HUD
 ; σε split screen (hw.asm, screen.asm). 10 εχθροί κινούνται στον κόσμο
-; (actors.asm) ως sprites με clip και save-under (sprites.asm). Fire
-; (Space / joystick) αλλάζει κόσμο (space <-> earth), ESC = παύση.
+; (actors.asm) ως sprites με clip και save-under (sprites.asm). Το σκάφος
+; έχει αδράνεια, φλόγα, καπνό στη Γη και πιλότους που ουρλιάζουν στις
+; απότομες στροφές (ship.asm). Fire (Space / joystick) αλλάζει κόσμο
+; (space <-> earth), ESC = παύση.
 ; Με make PROFILE=1 το border δείχνει τον χρόνο κάθε φάσης (hw.asm).
 ;
 ; Memory map (RAM config C0 σε όλο το παιχνίδι, εκτός από τις προσβάσεις
@@ -36,8 +38,6 @@
 STACK_TOP       equ #1000
 PPI_B           equ #F5         ; PPI port B: bit 0 = VSYNC
 
-SPEED_X         equ 1           ; bytes/καρέ = 2 pixels = 4 μονάδες οθόνης
-SPEED_Y         equ 4           ; γραμμές/καρέ = 4 μονάδες: ίδια ταχύτητα με το x
 SHIP_MAX_X      equ WORLD_W-SHIP_W
 SHIP_MAX_Y      equ WORLD_H-SHIP_H
 SHIP_WORLD_EARTH equ 8          ; ship_earth_n - ship_space_n
@@ -66,6 +66,7 @@ start:
         call make_map
         call init_actors
         call update_actors
+        call update_ship_sprites
 
         RAM_HUD
         call clear_hud
@@ -113,6 +114,7 @@ main_loop:
         call move_ship
         call update_camera
         call update_actors
+        call update_ship_sprites
         call page_buf           ; IX = η σελίδα που ζωγραφίζουμε
 
         PROFILE_BORDER HW_BRIGHT_BLUE   ; σβήσιμο (με την παλιά κάμερα)
@@ -136,6 +138,13 @@ main_loop:
         ld (frames),hl
 
         PROFILE_BORDER HW_YELLOW        ; HUD: μία φορά ανά 16 καρέ
+        ld a,(scream)
+        or a
+        jr z,.noscream
+        RAM_HUD
+        call update_scream
+        RAM_WORLD
+.noscream:
         ld a,(frames)
         and 15
         jr nz,.nohud
@@ -197,7 +206,7 @@ draw_hud:
         ld c,50
         jp print_u16
 
-txt_title:  db "SPACE FORCE C - M4 SPRITES",0
+txt_title:  db "SPACE FORCE C - M5 THE FLYING PATATES",0
 txt_frames: db "FRAMES",0
 txt_late:   db "LATE",0
 
@@ -208,58 +217,6 @@ page_buf:
         cp #C0
         ret nz
         ld ix,bufs+BUF_SIZE
-        ret
-
-move_ship:
-        ; κατεύθυνση από τα πατημένα βελάκια (αντίθετα = καμία αλλαγή)
-        ld a,(input)
-        and 15
-        ld e,a
-        ld d,0
-        ld hl,dir_table
-        add hl,de
-        ld a,(hl)
-        cp #FF
-        jr z,.keep
-        ld (ship_dir),a
-.keep:
-        ld a,(input)
-        ld c,a
-        ld hl,ship_x
-        bit 2,c                 ; IN_LEFT
-        jr z,.right
-        ld a,(hl)
-        sub SPEED_X
-        jr nc,$+3
-        xor a
-        ld (hl),a
-.right: bit 3,c                 ; IN_RIGHT
-        jr z,.up
-        ld a,(hl)
-        add a,SPEED_X
-        cp SHIP_MAX_X+1
-        jr c,$+4
-        ld a,SHIP_MAX_X
-        ld (hl),a
-.up:    ld hl,(ship_y)
-        ld de,SPEED_Y
-        bit 0,c                 ; IN_UP
-        jr z,.down
-        or a
-        sbc hl,de
-        jr nc,.down
-        ld hl,0
-.down:  bit 1,c                 ; IN_DOWN
-        jr z,.store
-        add hl,de
-        push hl
-        ld de,SHIP_MAX_Y+1
-        or a
-        sbc hl,de
-        pop hl
-        jr c,.store
-        ld hl,SHIP_MAX_Y
-.store: ld (ship_y),hl
         ret
 
 ; Μετακινεί την κάμερα ένα βήμα το πολύ ανά άξονα, όταν το σκάφος μπει στο
@@ -343,6 +300,7 @@ dir_table:
         include "map.asm"
         include "sprites.asm"
         include "actors.asm"
+        include "ship.asm"
         include "text.asm"
 
 ; Γραφικά (assets/data, παράγονται από assets/src/make_assets.py)
@@ -353,8 +311,19 @@ dir_table:
 ; Μεταβλητές με αρχική τιμή
 ;------------------------------------------------------------------
 
-ship_x:      db SHIP_START_X
-ship_y:      dw SHIP_START_Y
+ship_x:      db SHIP_START_X     ; = ship_x16 / 16
+ship_y:      dw SHIP_START_Y     ; = ship_y4 / 4
+ship_x16:    dw SHIP_START_X*16
+ship_y4:     dw SHIP_START_Y*4
+ship_vx:     db 0
+ship_vy:     db 0
+thrust:      db #FF             ; κατεύθυνση της ώθησης, #FF = καμία
+flame_phase: db 0
+smoke_timer: db 1
+smoke_next:  db 0
+smoke_age:   ds SMOKE_N
+scream:      db 0
+scream_text: db 0
 ship_dir:    db ship_space_n
 ship_world:  db 0
 cam_x:       db CAM_START_X
@@ -429,6 +398,7 @@ gfx4_data:
         include "../assets/data/tiles.asm"
         include "../assets/data/ship.asm"
         include "../assets/data/enemies.asm"
+        include "../assets/data/fx.asm"
 gfx4_end:
 
         assert bg_map+MAP_W*MAP_H <= halftiles, "map overlaps halftiles"
