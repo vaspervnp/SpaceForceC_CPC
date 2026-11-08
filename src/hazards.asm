@@ -65,6 +65,8 @@ spawn_enemy_shot:
 .free:  pop iy                  ; IY = εχθρός (θέση)
         push iy
         push hl
+        ld a,sfx_eshot
+        call play_sfx
         ld a,(es_gun)
         ld (ix+ES_KIND),a
         ld (ix+ES_DIR),b
@@ -355,9 +357,15 @@ ship_hit:
         ld hl,lives
         dec (hl)
         jr z,.over
+        ld a,sfx_hit
+        call play_sfx
         ld hl,txt_ouch
         jp set_status
-.over:  ld a,GAMEOVER_TIME
+.over:  ld a,mus_gameover
+        call play_music
+        ld a,sfx_explode
+        call play_sfx
+        ld a,GAMEOVER_TIME
         ld (gameover),a
         ld hl,txt_gameover
         jp set_status

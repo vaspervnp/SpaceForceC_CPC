@@ -221,12 +221,16 @@ apply_item:
         or a
         jr nz,.power
         ; μυρμήγκι
+        ld a,sfx_ant
+        call play_sfx
         ld hl,(ants_saved)
         inc hl
         ld (ants_saved),hl
         ld de,ANT_SCORE
         jp .score
 .power: push af
+        ld a,sfx_pickup
+        call play_sfx
         ld hl,(score)
         ld de,ITEM_SCORE
         add hl,de
@@ -311,6 +315,8 @@ use_shield:
         ld a,(shield)
         or a
         ret z
+        ld a,sfx_pop
+        call play_sfx
         xor a
         ld (shield),a
         ld a,INVULN_TIME/2

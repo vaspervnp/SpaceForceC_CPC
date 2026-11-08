@@ -80,6 +80,9 @@ update_weapons:
         inc a
         and 7
         ld (spray_dir),a
+        ld a,sfx_sneeze
+        call play_sfx
+        ld a,(spray_dir)
         ld c,WP_SNEEZE
         call spawn_shot
 .move:  ; --- κίνηση, ζωή, συγκρούσεις
@@ -134,6 +137,9 @@ update_weapons:
 
 ; Βολή με το τρέχον όπλο, στην κατεύθυνση του σκάφους.
 fire:
+        ld a,(weapon)           ; ήχος: sfx_disco + όπλο
+        add a,sfx_disco
+        call play_sfx
         ld a,(weapon)
         cp WP_BAGUETTE
         jr z,.baguette

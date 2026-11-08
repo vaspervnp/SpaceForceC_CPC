@@ -508,6 +508,8 @@ wave_table:
 
 ; Ο εχθρός IX (slot IY) σκάει: έκρηξη 8x16 στο κέντρο του.
 enemy_explode:
+        ld a,sfx_explode
+        call play_sfx
         ld (ix+EN_STATE),ST_BOOM
         ld (ix+EN_TIMER),BOOM_TIME
         ld a,(iy+SPR_W)         ; X += (w - 4) / 2

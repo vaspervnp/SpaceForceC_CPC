@@ -122,6 +122,16 @@ def run_measured(c, s, frames):
     return times[1:]            # το πρώτο ξεκίνησε πριν από τη μέτρηση
 
 
+def wait_title(c, s):
+    """Φόρτωμα ως τον τίτλο (η μουσική του έχει ξεκινήσει)."""
+    for _ in range(100):
+        c.run_frames(20)
+        if c.peek(s["music_now"]) == 1:     # mus_title
+            c.run_frames(25)
+            return
+    raise SystemExit("ο τίτλος δεν εμφανίστηκε")
+
+
 def fire(c, frames=10):
     c.joystick(JOY_FIRE)
     c.run_frames(frames)
@@ -163,7 +173,7 @@ def main():
     c.run_frames(150)
     c.insert_disc(DSK)
     c.type_text('RUN"DISC\n')
-    c.run_frames(400)
+    wait_title(c, s)
     c.set_joystick_type(1)
     c.screenshot(os.path.join(ROOT, "build/test_title.png"))
     c.joystick(JOY_FIRE)        # title -> παιχνίδι

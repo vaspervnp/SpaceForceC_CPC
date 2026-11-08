@@ -22,6 +22,8 @@ NAME_REPEAT     equ 8           ; καρέ πριν αρχίσει η επανά
 
 ; Επιστρέφει όταν ο παίκτης πατήσει fire ή το 1.
 title_screen:
+        ld a,mus_title
+        call play_music
         call ui_page
         ld hl,txt_title
         ld b,8
@@ -64,13 +66,19 @@ title_screen:
         ret z
         bit 1,a                 ; 2
         jr nz,.no2
+        call menu_sfx
         call redefine_keys
         jr title_screen
 .no2:   ld a,(keymap+7)
         bit 1,a                 ; 3
         jr nz,.loop
+        call menu_sfx
         call hiscore_screen
         jr title_screen
+
+menu_sfx:
+        ld a,sfx_menu
+        jp play_sfx
 
 ; Καθαρή σελίδα UI στην οθόνη, καθαρό HUD, κείμενο στη σελίδα.
 ui_page:
@@ -187,6 +195,7 @@ redefine_keys:
         ld (hl),d
         inc hl
         ld (hl),e
+        call menu_sfx
         call .key
         pop bc
         inc b
@@ -483,6 +492,7 @@ name_entry:
         ld a,(input_new)
         and IN_FIRE
         jr z,.updown
+        call menu_sfx
         ld hl,name_pos
         inc (hl)
         ld a,(hl)
@@ -532,6 +542,7 @@ name_entry:
         jr nz,.store
         ld a,'A'
 .store: ld (hl),a
+        call menu_sfx
         jp .draw
 
 ;------------------------------------------------------------------
@@ -545,7 +556,7 @@ wait_frame:
         jr c,wait_frame
         xor a
         ld (vbl_count),a
-        ret
+        jp sound_frame
 
 ; Κείμενο στο κέντρο: HL = κείμενο, B = γραμμή
 print_center:

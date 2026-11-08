@@ -3,6 +3,7 @@
 GA_MODE0        equ #8C         ; gate array: mode 0, upper + lower ROM off
 GA_RAM_C0       equ #C0         ; RAM config 0: τα 64K της κύριας μνήμης
 GA_RAM_C4       equ #C4         ; RAM config 4: bank 4 στο #4000-#7FFF
+GA_RAM_C6       equ #C6         ; RAM config 6: bank 6 (ήχος)
 
 
 FRAME_VBLS      equ 2           ; 50 Hz / 2 = 25 FPS
@@ -73,6 +74,9 @@ int_handler:
         out (c),c
         ld bc,#BD00+GAME_ROWS
         out (c),c
+        ld a,(snd_ticks)        ; ticks του ήχου (sound.asm)
+        inc a
+        ld (snd_ticks),a
         xor a
         jr .store
 .next:  ld a,(int_idx)
@@ -335,3 +339,35 @@ key_bindings:
         db 9,%00010000,IN_FIRE
         db #FF
 KEYS_USER       equ 7
+
+;------------------------------------------------------------------
+; Ήχος: ο player ζει στο bank 6 (sound.asm). Από εδώ μόνο αιτήσεις.
+;------------------------------------------------------------------
+
+; Ένα καρέ ήχου: σε C6, ο player, και πίσω σε C4 (RAM_WORLD). Χαλάει όλους
+; τους registers (και τον IX).
+sound_frame:
+        ld bc,#7F00+GA_RAM_C6
+        out (c),c
+        call snd_update
+        RAM_WORLD
+        ret
+
+; Ηχητικό εφέ A (sfx_*): κρατιέται το πιο σημαντικό του καρέ. Κρατάει HL.
+play_sfx:
+        push hl
+        ld hl,sfx_req
+        cp (hl)
+        jr c,$+3
+        ld (hl),a
+        pop hl
+        ret
+
+; Κομμάτι A (mus_*, #FF = σιωπή), αν δεν παίζει ήδη.
+play_music:
+        ld hl,music_now
+        cp (hl)
+        ret z
+        ld (hl),a
+        ld (music_req),a
+        ret

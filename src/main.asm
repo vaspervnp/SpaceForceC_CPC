@@ -22,6 +22,7 @@
 ;                  #4000 χάρτης (3K), #4C00 μισά πλακίδια (512),
 ;                  #4E00- GFX4.BIN: πλακίδια, σκάφος, fx, βλήματα
 ;                C5 (RAM_ENEMIES, ανά sprite): GFX5.BIN, εχθροί, pickups
+;                C6 (μόνο στο sound_frame): bank 6, ο ήχος (SND6.BIN)
 ;                C0 (RAM_HUD, μόνο όσο γράφεται το HUD): η φυσική
 ;                  σελίδα, με το HUD στα #x6C0-#x7FF κάθε block των 2K
 ;                Το DISC.BAS φορτώνει το GFX4.BIN κατευθείαν στο bank 4.
@@ -81,6 +82,7 @@ main_loop:
         ld a,(game_done)
         or a
         jp nz,game_end
+        call sound_frame        ; μία φορά ανά καρέ, μετά το flip
         PROFILE_BORDER HW_BRIGHT_GREEN  ; είσοδος + λογική
         call read_input
         ld a,(input_new)
@@ -105,6 +107,7 @@ main_loop:
         ld a,(ship_world)
         xor SHIP_WORLD_EARTH
         ld (ship_world),a
+        call world_music
 .noworld:
         call move_ship
         call update_weapons
@@ -187,6 +190,7 @@ game_init:
         call init_actors
         call update_actors
         call update_ship_sprites
+        call world_music
         call text_to_hud
         RAM_HUD
         call clear_hud
@@ -207,6 +211,15 @@ game_init:
         xor a                   ; η αρχικοποίηση δεν μετράει ως καρέ
         ld (vbl_count),a
         ret
+
+; Η μουσική του κόσμου: διάστημα ή Γη.
+world_music:
+        ld a,(ship_world)
+        or a
+        ld a,mus_space
+        jr z,$+4
+        ld a,mus_earth
+        jp play_music
 
 ; in: A = σελίδα
 init_page:
@@ -472,6 +485,10 @@ vbl_count:   db 0
 int_idx:     db #80
 game_r12:    db #20
 game_r13:    db 0
+snd_ticks:   db 0               ; ήχος (hw.asm, sound.asm)
+sfx_req:     db 0
+music_req:   db 0
+music_now:   db 0
 text_page:   db HUD_PAGE        ; text.asm: πού γράφει το κείμενο
 text_off:    dw HUD_OFFSET
 sp_x:        db 0               ; sprites.asm: το τρέχον sprite μετά το clip
@@ -574,5 +591,20 @@ gfx5_end:
         assert gfx5_end <= #8000, "bank 5 is full"
         ifndef SNAPSHOT
         save "GFX5.BIN",gfx5_data,gfx5_end-gfx5_data,DSK,"build/SpaceForceC.dsk"
+        endif
+
+;------------------------------------------------------------------
+; Bank 6 (C6): ο player του ήχου και η μουσική
+;------------------------------------------------------------------
+
+        bank 6
+        org #4000
+snd6_data:
+        include "sound.asm"
+snd6_end:
+
+        assert snd6_end <= #8000, "bank 6 is full"
+        ifndef SNAPSHOT
+        save "SND6.BIN",snd6_data,snd6_end-snd6_data,DSK,"build/SpaceForceC.dsk"
         endif
 

@@ -8,6 +8,7 @@
 #   make shot       Caprice32 χωρίς παράθυρο -> build/screenshot.png
 #   make test       headless CPC (~/cpcemu): σενάρια κίνησης, late frames,
 #                   έλεγχος της οθόνης κελί-κελί
+#   make sound      headless: οι registers του AY -> build/sound_*.wav
 #   make assets     ξαναπαράγει τα assets/data από τα assets/src
 #   make clean
 #
@@ -33,17 +34,18 @@ ASSET_DATA := $(wildcard assets/data/*.asm)
 RASMFLAGS := -I src $(if $(PROFILE),-DPROFILE=1)
 FLAGS_STAMP := $(BUILD)/flags
 
-.PHONY: all snap run run-snap run-cpcemu shot test assets clean FORCE
+.PHONY: all snap run run-snap run-cpcemu shot test sound assets clean FORCE
 
 all: $(DSK)
 
 # Το rasm γράφει το SFC.BIN και το GFX4.BIN σε νέα EDSK· το iDSK προσθέτει
 # τον loader (που κρατάει το Extended format) και ελέγχουμε το header στο
-# τέλος. Ο loader φορτώνει το GFX4.BIN στο bank 4 (OUT &7F00,&C4).
+# τέλος. Ο loader φορτώνει το GFX4.BIN στο bank 4 (OUT &7F00,&C4), το
+# GFX5.BIN στο 5 και τον ήχο (SND6.BIN) στο 6.
 $(DSK): $(SRC) $(ASSET_DATA) $(FLAGS_STAMP) Makefile
 	rm -f $@
 	$(RASM) $(RASMFLAGS) src/main.asm -o $(BUILD)/sfc -s -sq -os $(BUILD)/sfc.sym
-	printf '10 MEMORY &3FFF:OUT &7F00,&C4:LOAD"GFX4.BIN":OUT &7F00,&C5:LOAD"GFX5.BIN":OUT &7F00,&C0:RUN"SFC.BIN"\r\n' > $(LOADER)
+	printf '10 MEMORY &3FFF:OUT &7F00,&C4:LOAD"GFX4.BIN":OUT &7F00,&C5:LOAD"GFX5.BIN":OUT &7F00,&C6:LOAD"SND6.BIN":OUT &7F00,&C0:RUN"SFC.BIN"\r\n' > $(LOADER)
 	$(IDSK) $@ -i $(LOADER) -t 0 > /dev/null 2>&1
 	@head -c 21 $@ | grep -q 'EXTENDED CPC DSK File' || { echo "$@: δεν είναι Extended DSK"; exit 1; }
 	@$(IDSK) $@ -l 2>/dev/null | grep -E '^[A-Z0-9 ]{8}\.'
@@ -70,8 +72,12 @@ test: $(DSK)
 run-cpcemu: $(DSK)
 	tools/cpcemu.sh $(DSK)
 
+sound: $(DSK)
+	$(PYTHON) tools/sound_wav.py
+
 assets: $(ASSET_PY)
 	$(PYTHON) assets/src/make_assets.py
+	$(PYTHON) assets/src/music.py
 
 $(FLAGS_STAMP): FORCE
 	@mkdir -p $(BUILD)
