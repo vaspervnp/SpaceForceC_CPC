@@ -157,11 +157,65 @@ def check_level(c, s, n):
     return good
 
 
-def level_complete_flow(c, s):
-    """Τέλος πίστας -> Level Complete -> πίστα 2 -> (Γη) πίστα 5."""
-    c.poke(s["level_done"], 1)
+EN_SIZE, EN_KIND, EN_STATE, EN_HP = 11, 5, 6, 8
+KIND_BOSS = 12
+
+
+def boss_flow(c, s):
+    """Τέλος λίστας -> boss -> μάχη με fire προς τα πάνω -> Level Complete."""
+    c.poke(s["spawn_left"], 0)
+    for i in range(10):             # όλοι οι εχθροί: επόμενος της λίστας τώρα
+        c.poke(s["enemies"] + i * EN_SIZE + EN_STATE, 3)
+        c.poke(s["enemies"] + i * EN_SIZE + 7, 1)
+    c.run_frames(10)
+    slots = [i for i in range(10)
+             if c.peek(s["enemies"] + i * EN_SIZE + EN_KIND) == KIND_BOSS
+             and c.peek(s["enemies"] + i * EN_SIZE + EN_STATE) == 0]
+    if not slots or c.peek(s["boss_on"]) == 0:
+        print("boss: ΔΕΝ ΒΓΗΚΕ")
+        return False
+    boss = s["enemies"] + slots[0] * EN_SIZE
+    c.poke(s["invuln"], 250)
+    c.joystick(JOY_DOWN)            # χώρος από πάνω: ο boss στέκεται εκεί
+    c.run_frames(120)               # (σταματάει στην κάτω άκρη της arena)
+    c.joystick(0)
+    c.run_frames(40)                # σταματάει
+    c.poke(s["ship_dir"], 0)        # κοιτάει πάνω (n)
+    c.poke(s["invuln"], 250)
+    c.run_frames(150)               # ως να φτάσει ο boss
+    c.screenshot(os.path.join(ROOT, "build/test_boss.png"))
+    late0, f0 = word(c, s["late_frames"]), word(c, s["frames"])
+    hp0 = c.peek(boss + EN_HP)
+    c.joystick(JOY_FIRE)
+    junk, n = 0, 0
+    while c.peek(boss + EN_STATE) == 0 and n < 3000:
+        c.poke(s["invuln"], 50)
+        c.run_frames(1)
+        n += 1
+        for e in range(5):
+            if c.peek(s["eshots"] + e * 6 + 2) and c.peek(s["eshots"] + e * 6 + 3) == 4:
+                junk += 1
+                break
+        if n == 300:
+            c.screenshot(os.path.join(ROOT, "build/test_boss_fight.png"))
+    c.joystick(0)
+    fr = word(c, s["frames"]) - f0
+    late = word(c, s["late_frames"]) - late0
+    print("boss: αντοχή %d -> %d σε %.1f s, hardware στον αέρα %d καρέ, late %d/%d, σκάφος %d,%d"
+          % (hp0, c.peek(boss + EN_HP), n / 50, junk, late, fr,
+             c.peek(s["ship_x"]), word(c, s["ship_y"])))
+    good = n < 3000 and junk > 0
     c.run_frames(30)
+    c.screenshot(os.path.join(ROOT, "build/test_boss_boom.png"))
+    c.run_frames(350)               # εκρήξεις, χρόνος για τα μυρμήγκια
     c.screenshot(os.path.join(ROOT, "build/test_complete.png"))
+    good = good and word(c, s["score"]) >= 5000
+    print("boss: σκορ %d %s" % (word(c, s["score"]), "OK" if good else "ΛΑΘΟΣ"))
+    return good
+
+
+def level_complete_flow(c, s):
+    """Μετά τον boss: Level Complete -> πίστα 2 -> (Γη) πίστα 5."""
     fire(c)
     c.run_frames(20)
     c.screenshot(os.path.join(ROOT, "build/test_level2.png"))
@@ -242,7 +296,7 @@ def main():
             ok = False
     late = word(c, s["late_frames"])
     print("σύνολο: %d καρέ, %d άργησαν" % (word(c, s["frames"]), late))
-    ok = ok_level and level_complete_flow(c, s) and ok
+    ok = ok_level and boss_flow(c, s) and level_complete_flow(c, s) and ok
     ok = game_over_flow(c, s) and ok
     sys.exit(0 if ok else 1)
 

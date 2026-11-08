@@ -202,11 +202,16 @@
 - Μνήμη: `ram_end` = #3E70, μένουν ~400 bytes ως το #4000. Επόμενη λύση: η γραμματοσειρά και τα κείμενα του UI σε bank
 
 ## M12 — Vertical slice: Level 1
-- [ ] **Level 1: The Asteroid Belt of Lost Luggage** — βαλίτσες/κάλτσες asteroids (Blender → sprites/tiles)
-- [ ] Πλήρες gameplay loop: start → level → boss → level complete
-- [ ] **Boss: Lord Garbage-Can** — πετάει παλιό Amstrad hardware, patterns επίθεσης, health bar
-- [ ] Playtest, μέτρηση performance (σταθερά 25 FPS), διορθώσεις
-- [ ] Έλεγχος σε Caprice32 **και** CPCemu
+**Έγινε** (`src/boss.asm`, `assets/src/junk.py`). Όλη η διαδρομή παίζει: τίτλος -> οθόνη πίστας -> εχθροί -> boss -> Level Complete -> πίστα 2. Ο boss είναι ένα slot του actors.asm με `EN_KIND` = `KIND_BOSS`, οπότε βλήματα και επαφή περνούν από τον ίδιο κώδικα. Το `make test` κάνει ολόκληρη τη μάχη (μέχρι το σκορ και την επόμενη πίστα).
+- [x] **Level 1: The Asteroid Belt of Lost Luggage**: κυρίως κάλτσες και βαλίτσες (18 από τους 27 εχθρούς), λίγοι σχηματισμοί, νάρκες και ένας διοικητής. Με τα υπάρχοντα sprites, χωρίς Blender
+- [x] Πλήρες gameplay loop: start -> level -> boss -> level complete. Οι πίστες χωρίς boss (`LV_BOSS` = 0, οι 2-8 ως τα M13-M14) τελειώνουν με το τέλος της λίστας
+- [x] **Boss: Lord Garbage-Can** (bank 5, 12x48): 120 αντοχή, μπάρα στο HUD (ένα κελί = 8), +5000. Η κάμερα κλειδώνει και το σκάφος μένει στην οθόνη (arena). Το καπάκι ανοίγει 1 s πριν από τη βολή, βεντάλια 3 κομματιών (δισκέτα, κασέτα, οθόνη)· κάτω από τη μισή αντοχή 5 και πιο συχνά· κάθε 4η βολή κατεβαίνει όλη την οθόνη. Δεν χορεύει με το Disco-Ray και δεν τον διαπερνά η μπαγκέτα
+- [x] Μετρήσεις στο headless: με τέλειο Disco-Ray ο boss πέφτει σε 29 s· σκάφος που δεν κουνιέται χάνει τις 3 ζωές σε 11 s. Στην πίστα τα καρέ που αργούν είναι ~3%
+- [ ] **Σταθερά 25 FPS**: στη μάχη με τον boss αργούν 6-14% των καρέ (35-84 από 607, ανάλογα με το CRTC και την τύχη), με τον boss, 6 δικές σου βολές και 5 κομμάτια hardware στην οθόνη. Για το M16
+- [ ] **Playtest από άνθρωπο**: η ισορροπία (πόσο εύκολα αποφεύγεται το hardware, δυσκολία της πίστας) δεν κρίνεται με bot
+- [x] Caprice32: η πίστα 1 τρέχει από τη δισκέτα, με screenshot. Ο boss ελέγχθηκε μόνο στο headless
+- [ ] CPCEMU: τρέχει 25 s χωρίς να κολλήσει, αλλά το παράθυρό του δεν βγάζει screenshot· θέλει `make run-cpcemu` και μάτι
+- Μνήμη: η γραμματοσειρά χωρίς μάσκες κέρδισε 784 bytes. `ram_end` = #3E8D, μένουν ~370 bytes ως το #4000
 
 ## M13 — World A: Space (Levels 2–4)
 - [ ] **Level 2: The Nebula of Bureaucracy** — σταθμοί με ουρές και σφραγίδες · Boss: **The Grand Inspector** (σφραγίδα "REJECTED")

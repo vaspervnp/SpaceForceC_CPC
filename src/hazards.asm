@@ -7,13 +7,14 @@
 ;   επαφή με εχθρό     κοστίζει ζωή, και ο εχθρός σκάει
 ;
 ; Μετά από ζημιά, 2 s άτρωτο (το σκάφος αναβοσβήνει). Με 0 ζωές: GAME OVER
-; για 3 s και ξανά από την αρχή. Το Bubble Wrap (items.asm) απορροφά ένα
+; για 3 s και μετά ο πίνακας ρεκόρ. Το Bubble Wrap (items.asm) απορροφά ένα
 ; χτύπημα.
 
 GUN_NONE        equ 0
 GUN_E9          equ 1
 GUN_SPAGHETTI   equ 2
 GUN_TORPEDO     equ 3
+GUN_JUNK        equ 4           ; το hardware του Lord Garbage-Can: κοστίζει ζωή
 
 ESHOT_N         equ 5
 ESHOT_SLOT      equ SHOT_SLOT+SHOT_N    ; 19-23
@@ -186,7 +187,7 @@ update_enemy_shots:
         jr z,.e9
         cp GUN_SPAGHETTI
         jr z,.pasta
-        call ship_hit           ; τορπίλη
+        call ship_hit           ; τορπίλη, hardware
         jr .kill
 .pasta: ld a,SLOW_TIME
         ld (slowed),a
@@ -244,6 +245,28 @@ update_enemy_shots:
 
 ; Γραφικό του βλήματος IX στο sprite IY.
 .frame: ld a,(ix+ES_KIND)
+        cp GUN_JUNK
+        jr nz,.nojunk
+        ld a,(ix+ES_DIR)        ; δισκέτα, κασέτα ή οθόνη, από το bank 5
+        and 3
+        cp 3
+        jr c,$+3
+        xor a
+        ld l,a
+        ld h,0
+        add hl,hl
+        add hl,hl
+        add hl,hl
+        add hl,hl
+        add hl,hl
+        add hl,hl               ; *64 = JUNK_SZ
+        ld de,junk_gfx
+        add hl,de
+        ld (iy+SPR_GFX),l
+        ld (iy+SPR_GFX+1),h
+        ld (iy+SPR_BANK),BANK_ENEMIES
+        ret
+.nojunk:
         cp GUN_E9
         jr nz,.dirk
         ld a,(frames)           ; Ε9: στριφογυρίζει
@@ -331,7 +354,9 @@ check_ship_enemies:
         jr nc,.next
         call hits_ship
         jr nc,.next
-        call enemy_explode
+        ld a,(ix+EN_KIND)       ; ο boss δεν σκάει από την επαφή
+        cp KIND_BOSS
+        call nz,enemy_explode
         call ship_hit
         pop bc
         ret                     ; ένα χτύπημα ανά καρέ φτάνει

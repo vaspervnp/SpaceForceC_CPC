@@ -11,7 +11,8 @@ LEVEL_HDR       equ #7C00       ; bank 4, ως το #7FFF
 LV_WORLD        equ 0           ; 0 = διάστημα, 8 = Γη (ship_world)
 LV_MUSIC        equ 1
 LV_COUNT        equ 2           ; πόσοι εχθροί στη λίστα
-LV_TEXT         equ 3           ; όνομα, 2 γραμμές χιούμορ, με 0 στο τέλος
+LV_BOSS         equ 3           ; 0 = χωρίς boss (boss.asm)
+LV_TEXT         equ 4           ; όνομα, 2 γραμμές χιούμορ, με 0 στο τέλος
 STAGE           equ #8000       ; προσωρινά τα συμπιεσμένα
 STAGE_SIZE      equ 2048        ; >= το μεγαλύτερο κομμάτι (levels.py)
 GA_RAM_C7       equ #C7

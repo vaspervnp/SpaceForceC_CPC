@@ -1,4 +1,4 @@
-; main.asm — Space Force C, M9: HUD, title, high scores
+; main.asm — Space Force C, M12: πίστα 1 με τον boss της
 ;
 ; Το σκάφος κινείται με κέρσορες (ή όποια πλήκτρα ορίσει ο παίκτης) / joystick σε χάρτη 64x48
 ; πλακιδίων (4 οθόνες επί 2) και η κάμερα το ακολουθεί με hardware scroll
@@ -164,6 +164,13 @@ main_loop:
         call update_status
         RAM_WORLD
 .nostatus:
+        ld a,(boss_on)
+        or a
+        jr z,.nobar
+        RAM_HUD
+        call draw_boss_bar
+        RAM_WORLD
+.nobar:
         ld a,(hud_dirty)
         or a
         jr z,.noscore
@@ -370,6 +377,9 @@ page_buf:
 ; περιθώριο. Η κάμερα (2 bytes, 8 γραμμές ανά βήμα) είναι πιο γρήγορη από το
 ; σκάφος (1 byte, 4 γραμμές), οπότε το προλαβαίνει πάντα.
 update_camera:
+        ld a,(boss_on)          ; boss: κλειδωμένη (boss.asm)
+        or a
+        jp nz,boss_arena
         ld a,(cam_x)
         add a,a
         ld b,a
@@ -447,6 +457,7 @@ dir_table:
         include "map.asm"
         include "sprites.asm"
         include "actors.asm"
+        include "boss.asm"
         include "ship.asm"
         include "weapons.asm"
         include "hazards.asm"
@@ -517,6 +528,10 @@ level_done:  db 0
 spawn_left:  db 0               ; εχθροί της λίστας της πίστας που μένουν
 spawn_ptr:   dw 0
 enemies_left: db 0              ; slots που δεν έχουν τελειώσει (ST_GONE)
+boss_on:     db 0               ; boss.asm: 0 = όχι ακόμα, 1 = μόλις, 2 = HUD έτοιμο
+boss_cells:  db 0
+boss_dir:    db 0
+boss_ptr:    dw 0
 frames:      dw 0
 late_frames: dw 0
 game_vars_end:
@@ -629,6 +644,8 @@ gfx4_end:
 gfx5_data:
         include "../assets/data/enemies.asm"
         include "../assets/data/pickups.asm"    ; μυρμήγκια (και τα power-ups του M8)
+        include "../assets/data/boss1.asm"
+        include "../assets/data/junk.asm"
 gfx5_end:
 
         assert gfx5_end <= #8000, "bank 5 is full"

@@ -1,7 +1,7 @@
 ; text.asm — κείμενο με τη γραμματοσειρά 4x8 του HUD (40 χαρακτήρες/γραμμή)
 ;
-; Το HUD είναι πάντα μαύρο από κάτω, οπότε ο γλύφος γράφεται αδιαφανής: μόνο
-; τα bytes δεδομένων (pen 0 = μαύρο). Σβήνει έτσι και ό,τι ήταν εκεί πριν,
+; Το HUD είναι πάντα μαύρο από κάτω, οπότε ο γλύφος γράφεται αδιαφανής
+; (pen 0 = μαύρο, χωρίς μάσκα). Σβήνει έτσι και ό,τι ήταν εκεί πριν,
 ; χωρίς καθάρισμα. Η γραμμή B είναι πολλαπλάσιο του 8 (όριο σειράς), ώστε η
 ; διεύθυνση να υπολογίζεται μία φορά ανά γλύφο: ~0,2 ms ο χαρακτήρας.
 
@@ -28,11 +28,9 @@ print_char:
 .line:  ld a,(hl)
         ld (de),a
         inc hl
-        inc hl
         inc de                  ; μέσα στο block: γραμμικό ως το #x7FF
         ld a,(hl)
         ld (de),a
-        inc hl
         inc hl
         dec de
         ld a,d
@@ -50,7 +48,7 @@ print_big:
         inc hl
         push hl
         push bc
-        call font_glyph         ; HL = bytes δεδομένων του γλύφου
+        call font_glyph         ; HL = ο γλύφος
         call .half              ; γραμμές 0-3 -> 8 γραμμές
         pop bc
         push bc
@@ -72,11 +70,9 @@ print_big:
 .twice: ld a,(hl)
         ld (de),a
         inc hl
-        inc hl
         inc de
         ld a,(hl)
         ld (de),a
-        dec hl
         dec hl
         dec de
         ld a,d
@@ -84,13 +80,13 @@ print_big:
         ld d,a
         dec c
         jr nz,.twice
-        ld bc,4
-        add hl,bc
+        inc hl
+        inc hl
         pop bc
         djnz .line
         ret
 
-; HL = τα bytes δεδομένων του γλύφου του χαρακτήρα A (mask,data -> +1)
+; HL = ο γλύφος του χαρακτήρα A
 font_glyph:
         sub 32
         ld e,a
@@ -99,12 +95,11 @@ font_glyph:
         add hl,de
         ld l,(hl)
         ld h,0
-        add hl,hl               ; *32 = FONT_SZ
+        add hl,hl               ; *16 = FONT_SZ
         add hl,hl
         add hl,hl
         add hl,hl
-        add hl,hl
-        ld de,font_gfx+1
+        ld de,font_gfx
         add hl,de
         ret
 

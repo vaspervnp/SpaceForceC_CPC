@@ -1688,14 +1688,59 @@
    }
   ]
  },
+ "junk": {
+  "title": "το hardware που πετάει ο Lord Garbage-Can",
+  "frames": 3,
+  "bytes": 192,
+  "fixed_size": {
+   "w": 8,
+   "h": 8,
+   "masked": true
+  },
+  "items": [
+   {
+    "label": "junk_floppy",
+    "what": "δισκέτα 3\"",
+    "w": 8,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     16,
+     8
+    ]
+   },
+   {
+    "label": "junk_tape",
+    "what": "κασέτα",
+    "w": 8,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     16,
+     8
+    ]
+   },
+   {
+    "label": "junk_monitor",
+    "what": "οθόνη CTM644",
+    "w": 8,
+    "h": 8,
+    "masked": true,
+    "screen_units": [
+     16,
+     8
+    ]
+   }
+  ]
+ },
  "font": {
   "title": "γραμματοσειρά 4x8",
   "frames": 49,
-  "bytes": 1568,
+  "bytes": 784,
   "fixed_size": {
    "w": 4,
    "h": 8,
-   "masked": true
+   "masked": false
   },
   "items": [
    {
@@ -1703,7 +1748,7 @@
     "what": "'0'",
     "w": 4,
     "h": 8,
-    "masked": true,
+    "masked": false,
     "screen_units": [
      8,
      8
@@ -1714,7 +1759,7 @@
     "what": "'1'",
     "w": 4,
     "h": 8,
-    "masked": true,
+    "masked": false,
     "screen_units": [
      8,
      8
@@ -1725,7 +1770,7 @@
     "what": "'2'",
     "w": 4,
     "h": 8,
-    "masked": true,
+    "masked": false,
     "screen_units": [
      8,
      8
@@ -1736,7 +1781,7 @@
     "what": "'3'",
     "w": 4,
     "h": 8,
-    "masked": true,
+    "masked": false,
     "screen_units": [
      8,
      8
@@ -1747,7 +1792,7 @@
     "what": "'4'",
     "w": 4,
     "h": 8,
-    "masked": true,
+    "masked": false,
     "screen_units": [
      8,
      8
@@ -1758,7 +1803,7 @@
     "what": "'5'",
     "w": 4,
     "h": 8,
-    "masked": true,
+    "masked": false,
     "screen_units": [
      8,
      8
@@ -1769,7 +1814,7 @@
     "what": "'6'",
     "w": 4,
     "h": 8,
-    "masked": true,
+    "masked": false,
     "screen_units": [
      8,
      8
@@ -1780,7 +1825,7 @@
     "what": "'7'",
     "w": 4,
     "h": 8,
-    "masked": true,
+    "masked": false,
     "screen_units": [
      8,
      8
@@ -1791,7 +1836,7 @@
     "what": "'8'",
     "w": 4,
     "h": 8,
-    "masked": true,
+    "masked": false,
     "screen_units": [
      8,
      8
@@ -1802,7 +1847,7 @@
     "what": "'9'",
     "w": 4,
     "h": 8,
-    "masked": true,
+    "masked": false,
     "screen_units": [
      8,
      8
@@ -1813,7 +1858,7 @@
     "what": "'A'",
     "w": 4,
     "h": 8,
-    "masked": true,
+    "masked": false,
     "screen_units": [
      8,
      8
@@ -1824,7 +1869,7 @@
     "what": "'B'",
     "w": 4,
     "h": 8,
-    "masked": true,
+    "masked": false,
     "screen_units": [
      8,
      8
@@ -1835,7 +1880,7 @@
     "what": "'C'",
     "w": 4,
     "h": 8,
-    "masked": true,
+    "masked": false,
     "screen_units": [
      8,
      8
@@ -1846,7 +1891,7 @@
     "what": "'D'",
     "w": 4,
     "h": 8,
-    "masked": true,
+    "masked": false,
     "screen_units": [
      8,
      8
@@ -1857,7 +1902,7 @@
     "what": "'E'",
     "w": 4,
     "h": 8,
-    "masked": true,
+    "masked": false,
     "screen_units": [
      8,
      8
@@ -1868,7 +1913,7 @@
     "what": "'F'",
     "w": 4,
     "h": 8,
-    "masked": true,
+    "masked": false,
     "screen_units": [
      8,
      8
@@ -1879,7 +1924,7 @@
     "what": "'G'",
     "w": 4,
     "h": 8,
-    "masked": true,
+    "masked": false,
     "screen_units": [
      8,
      8
@@ -1890,7 +1935,7 @@
     "what": "'H'",
     "w": 4,
     "h": 8,
-    "masked": true,
+    "masked": false,
     "screen_units": [
      8,
      8
@@ -1901,7 +1946,7 @@
     "what": "'I'",
     "w": 4,
     "h": 8,
-    "masked": true,
+    "masked": false,
     "screen_units": [
      8,
      8
@@ -1912,7 +1957,7 @@
     "what": "'J'",
     "w": 4,
     "h": 8,
-    "masked": true,
+    "masked": false,
     "screen_units": [
      8,
      8
@@ -1923,7 +1968,7 @@
     "what": "'K'",
     "w": 4,
     "h": 8,
-    "masked": true,
+    "masked": false,
     "screen_units": [
      8,
      8
@@ -1934,7 +1979,7 @@
     "what": "'L'",
     "w": 4,
     "h": 8,
-    "masked": true,
+    "masked": false,
     "screen_units": [
      8,
      8
@@ -1945,7 +1990,7 @@
     "what": "'M'",
     "w": 4,
     "h": 8,
-    "masked": true,
+    "masked": false,
     "screen_units": [
      8,
      8
@@ -1956,7 +2001,7 @@
     "what": "'N'",
     "w": 4,
     "h": 8,
-    "masked": true,
+    "masked": false,
     "screen_units": [
      8,
      8
@@ -1967,7 +2012,7 @@
     "what": "'O'",
     "w": 4,
     "h": 8,
-    "masked": true,
+    "masked": false,
     "screen_units": [
      8,
      8
@@ -1978,7 +2023,7 @@
     "what": "'P'",
     "w": 4,
     "h": 8,
-    "masked": true,
+    "masked": false,
     "screen_units": [
      8,
      8
@@ -1989,7 +2034,7 @@
     "what": "'Q'",
     "w": 4,
     "h": 8,
-    "masked": true,
+    "masked": false,
     "screen_units": [
      8,
      8
@@ -2000,7 +2045,7 @@
     "what": "'R'",
     "w": 4,
     "h": 8,
-    "masked": true,
+    "masked": false,
     "screen_units": [
      8,
      8
@@ -2011,7 +2056,7 @@
     "what": "'S'",
     "w": 4,
     "h": 8,
-    "masked": true,
+    "masked": false,
     "screen_units": [
      8,
      8
@@ -2022,7 +2067,7 @@
     "what": "'T'",
     "w": 4,
     "h": 8,
-    "masked": true,
+    "masked": false,
     "screen_units": [
      8,
      8
@@ -2033,7 +2078,7 @@
     "what": "'U'",
     "w": 4,
     "h": 8,
-    "masked": true,
+    "masked": false,
     "screen_units": [
      8,
      8
@@ -2044,7 +2089,7 @@
     "what": "'V'",
     "w": 4,
     "h": 8,
-    "masked": true,
+    "masked": false,
     "screen_units": [
      8,
      8
@@ -2055,7 +2100,7 @@
     "what": "'W'",
     "w": 4,
     "h": 8,
-    "masked": true,
+    "masked": false,
     "screen_units": [
      8,
      8
@@ -2066,7 +2111,7 @@
     "what": "'X'",
     "w": 4,
     "h": 8,
-    "masked": true,
+    "masked": false,
     "screen_units": [
      8,
      8
@@ -2077,7 +2122,7 @@
     "what": "'Y'",
     "w": 4,
     "h": 8,
-    "masked": true,
+    "masked": false,
     "screen_units": [
      8,
      8
@@ -2088,7 +2133,7 @@
     "what": "'Z'",
     "w": 4,
     "h": 8,
-    "masked": true,
+    "masked": false,
     "screen_units": [
      8,
      8
@@ -2099,7 +2144,7 @@
     "what": "'κενό'",
     "w": 4,
     "h": 8,
-    "masked": true,
+    "masked": false,
     "screen_units": [
      8,
      8
@@ -2110,7 +2155,7 @@
     "what": "'.'",
     "w": 4,
     "h": 8,
-    "masked": true,
+    "masked": false,
     "screen_units": [
      8,
      8
@@ -2121,7 +2166,7 @@
     "what": "','",
     "w": 4,
     "h": 8,
-    "masked": true,
+    "masked": false,
     "screen_units": [
      8,
      8
@@ -2132,7 +2177,7 @@
     "what": "':'",
     "w": 4,
     "h": 8,
-    "masked": true,
+    "masked": false,
     "screen_units": [
      8,
      8
@@ -2143,7 +2188,7 @@
     "what": "'-'",
     "w": 4,
     "h": 8,
-    "masked": true,
+    "masked": false,
     "screen_units": [
      8,
      8
@@ -2154,7 +2199,7 @@
     "what": "'!'",
     "w": 4,
     "h": 8,
-    "masked": true,
+    "masked": false,
     "screen_units": [
      8,
      8
@@ -2165,7 +2210,7 @@
     "what": "'?'",
     "w": 4,
     "h": 8,
-    "masked": true,
+    "masked": false,
     "screen_units": [
      8,
      8
@@ -2176,7 +2221,7 @@
     "what": "'('",
     "w": 4,
     "h": 8,
-    "masked": true,
+    "masked": false,
     "screen_units": [
      8,
      8
@@ -2187,7 +2232,7 @@
     "what": "')'",
     "w": 4,
     "h": 8,
-    "masked": true,
+    "masked": false,
     "screen_units": [
      8,
      8
@@ -2198,7 +2243,7 @@
     "what": "'/'",
     "w": 4,
     "h": 8,
-    "masked": true,
+    "masked": false,
     "screen_units": [
      8,
      8
@@ -2209,7 +2254,7 @@
     "what": "'%'",
     "w": 4,
     "h": 8,
-    "masked": true,
+    "masked": false,
     "screen_units": [
      8,
      8
@@ -2220,7 +2265,7 @@
     "what": "'+'",
     "w": 4,
     "h": 8,
-    "masked": true,
+    "masked": false,
     "screen_units": [
      8,
      8
@@ -2231,7 +2276,7 @@
     "what": "'*'",
     "w": 4,
     "h": 8,
-    "masked": true,
+    "masked": false,
     "screen_units": [
      8,
      8
@@ -2427,5 +2472,5 @@
   "pixels_per_byte": 2,
   "move_2px": "κίνηση ανά 2 pixel = 1 byte, άρα ΟΛΑ τα blits είναι byte-aligned και δεν χρειάζονται προ-μετατοπισμένα αντίγραφα"
  },
- "_total_bytes": 20128
+ "_total_bytes": 19536
 }

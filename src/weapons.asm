@@ -386,6 +386,13 @@ shot_hits:
         sbc hl,de
         jr c,.miss
         ; χτύπημα
+        ld a,(ix+EN_KIND)       ; ο boss δεν χορεύει και δεν διαπερνιέται
+        cp KIND_BOSS
+        jr nz,.notboss
+        ld a,#FF
+        ld (shot_kind),a
+        jr .boom
+.notboss:
         ld a,(shot_kind)
         cp WP_DISCO
         jr nz,.boom
@@ -399,7 +406,7 @@ shot_hits:
 .hit:   pop bc
         pop iy
         pop ix
-        ld a,(ix+SH_KIND)
+        ld a,(shot_kind)
         cp WP_BAGUETTE
         ret z                   ; διαπερνάει
         ld (ix+SH_LIFE),0
@@ -410,7 +417,8 @@ shot_hits:
         ld de,SPR_SIZE
         add iy,de
         pop bc
-        djnz .en
+        dec b
+        jp nz,.en
         pop iy
         pop ix
         ret

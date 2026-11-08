@@ -5,7 +5,7 @@
 ΚΑΘΕ ΠΙΣΤΑ ΕΙΝΑΙ ΔΥΟ ΣΥΜΠΙΕΣΜΕΝΑ ΚΟΜΜΑΤΙΑ
 
     χάρτης   64x48 πλακίδια (3072 bytes)  -> bank 4, #4000 (bg_map)
-    header   κόσμος, μουσική, κείμενα, λίστα εχθρών  -> bank 4, #7C00
+    header   κόσμος, μουσική, boss, κείμενα, λίστα εχθρών  -> bank 4, #7C00
 
 Όλες οι πίστες φορτώνονται μαζί από τη δισκέτα στο bank 7 (LEVELS.BIN) και
 η αρχή μιας πίστας τις ξεσυμπιέζει από εκεί (src/level.asm). Με 8 πίστες
@@ -49,6 +49,7 @@ SHIP_START = (128 - 3, 180)     # (x σε bytes, y), όπως στο main.asm
 SAFE_RADIUS = (40, 80)          # κανένας εχθρός τόσο κοντά στην αφετηρία
 
 T = {key: i for i, (key, *_) in enumerate(TI.TILES)}
+BOSS_LORD = 1
 ENEMY = {'grunt': 0, 'mine': 2, 'sock': 4, 'saucer': 6, 'suitcase': 8, 'roach': 10}
 EN_SIZE_PX = {'grunt': (8, 16), 'mine': (8, 16), 'sock': (8, 16),
               'saucer': (12, 16), 'suitcase': (12, 16), 'roach': (12, 16)}
@@ -61,8 +62,8 @@ MUS = {'space': 2, 'earth': 3}
 LEVELS = [
     dict(name='THE ASTEROID BELT OF LOST LUGGAGE',
          quip=('SOMEWHERE OUT HERE IS EVERY SOCK', 'YOU EVER LOST. AVOID THEM.'),
-         world='space', bg='stars', stamps=['dust'] * 8,
-         mix=[('sock', 8), ('suitcase', 6), ('grunt', 9), ('mine', 3), ('roach', 1)]),
+         world='space', bg='stars', stamps=['dust'] * 8, boss=BOSS_LORD,
+         mix=[('sock', 10), ('suitcase', 8), ('grunt', 6), ('mine', 2), ('roach', 1)]),
     dict(name='THE NEBULA OF BUREAUCRACY',
          quip=('PLEASE TAKE A NUMBER.', 'YOUR NUMBER IS 8,000,442.'),
          world='space', bg='nebula', stamps=['station'] * 10,
@@ -218,7 +219,7 @@ def header(lv, sp):
         assert set(t) <= FONT_CHARS, t
         assert len(t) <= 40, t
         texts += list(t.encode()) + [0]
-    h = [world, MUS[lv['world']], len(sp)] + texts
+    h = [world, MUS[lv['world']], len(sp), lv.get('boss', 0)] + texts
     assert len(h) <= LV_SPAWNS, lv['name']
     h += [0] * (LV_SPAWNS - len(h))
     for x, y, vx, vy, kind in sp:

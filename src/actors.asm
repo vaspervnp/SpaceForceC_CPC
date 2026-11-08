@@ -60,6 +60,7 @@ kind_info:
         db AI_CIRCLE,GUN_SPAGHETTI,2,1,70   ; δίσκος: Laser Spaghetti
         db AI_BOUNCE,GUN_NONE,     3,1,0    ; βαλίτσα: αργή, αντέχει
         db AI_CHASE, GUN_TORPEDO,  3,2,60   ; κατσαρίδα-διοικητής
+        db AI_STATIC,GUN_NONE,     BOSS_HP,3,0  ; boss (κινείται στο boss.asm)
 
 ; Οι πρώτοι ENEMY_N της λίστας της πίστας (level.asm), όπου κι αν είναι.
 init_actors:
@@ -108,7 +109,13 @@ spawn_enemy:
         ld hl,enemies_left
         dec (hl)
         ret nz
-        ld a,1
+        ld a,(boss_on)          ; όλοι τέλος: ο boss της πίστας, αν υπάρχει
+        or a
+        jr nz,.done
+        ld a,(LEVEL_HDR+LV_BOSS)
+        or a
+        jp nz,boss_start
+.done:  ld a,1
         ld (level_done),a
         ret
 
@@ -191,6 +198,9 @@ update_actors:
         jp z,.next
 
         ; --- ζωντανός
+        ld a,(ix+EN_KIND)
+        cp KIND_BOSS
+        jp z,.boss
         call .frame_anim
         call enemy_think        ; ταχύτητα ανάλογα με τον τύπο
         call enemy_gun
@@ -258,8 +268,16 @@ update_actors:
         call enemy_explode
         jr .next
 
+.boss:  call boss_update
+        jp .next
+
 .boom:  ; --- έκρηξη 8x16 στο κέντρο του εχθρού, καρέ 0/1/2
-        ld a,(ix+EN_TIMER)
+        ld a,(ix+EN_KIND)
+        cp KIND_BOSS
+        jr nz,.small
+        call boss_boom
+        jr .boomed
+.small: ld a,(ix+EN_TIMER)
         ld c,fx_booms0+2
         cp 4
         jr c,.bph
@@ -269,6 +287,7 @@ update_actors:
         dec c
 .bph:   ld a,c
         call fx_frame
+.boomed:
         dec (ix+EN_TIMER)
         jr nz,.next
         ld (ix+EN_STATE),ST_DEAD
@@ -306,6 +325,9 @@ update_actors:
 
 ; Καρέ animation: kind + (frames/8 & 1)· από το .frame_n με άλλο ρυθμό.
 .frame_anim:
+        ld a,(ix+EN_KIND)
+        cp KIND_BOSS
+        jp z,boss_frame
         ld a,(frames)
 .frame_n:
         rrca
@@ -469,7 +491,11 @@ enemy_gun:
         ld a,b
         or c
         ret z                   ; ακριβώς πάνω του: τίποτα
-        ; κατεύθυνση = dir_from[(dy+1)*3 + dx+1]
+        call aim_dir
+        jp spawn_enemy_shot
+
+; Κατεύθυνση 0-7 από το αποτέλεσμα του aim_at_ship: dir_from[(dy+1)*3 + dx+1]
+aim_dir:
         ld a,c
         inc a
         ld e,a
@@ -482,7 +508,7 @@ enemy_gun:
         ld hl,dir_from
         add hl,de
         ld a,(hl)
-        jp spawn_enemy_shot
+        ret
 
 ; (dx, dy) -> κατεύθυνση 0-7
 dir_from:
@@ -529,6 +555,9 @@ enemy_explode:
         call play_sfx
         ld (ix+EN_STATE),ST_BOOM
         ld (ix+EN_TIMER),BOOM_TIME
+        ld a,(ix+EN_KIND)
+        cp KIND_BOSS
+        jp z,boss_explode
         ld a,(iy+SPR_W)         ; X += (w - 4) / 2
         sub 4
         srl a

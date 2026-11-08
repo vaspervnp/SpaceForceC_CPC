@@ -33,6 +33,7 @@ import cpcimg
 import enemies as EN
 import font as FO
 import fx
+import junk
 import gfx
 import pickups as PU
 import preview
@@ -277,15 +278,22 @@ def build():
         g.add('boss1_%s' % nm, 'καπάκι %s' % nm, boss1.frame(k))
     groups.append(g)
 
+    g = Group('junk', 'το hardware που πετάει ο Lord Garbage-Can',
+              'Ίδιο μέγεθος με τα βλήματα. Ζει στο bank 5 μαζί με τον boss.')
+    for k, (nm, what, _) in enumerate(junk.JUNK):
+        g.add('junk_%s' % nm, what, junk.frame(k))
+    groups.append(g)
+
     # ----------------------------------------------------- γραμματοσειρά
     g = Group('font', 'γραμματοσειρά 4x8',
               '4 px x 8 γραμμές = 8x8 μονάδες οθόνης: 40 χαρακτήρες στη\n'
               'γραμμή. Το γράμμα πιάνει 3 στήλες, η τέταρτη είναι το κενό.\n'
-              'Η φθηνή έκδοση είναι 1 bit/pixel (392 bytes αντί για 1.568)\n'
-              'με πίνακα 16 bytes που ανοίγει κάθε nibble — και δίνει\n'
-              'οποιοδήποτε χρώμα χωρίς δεύτερο σετ.')
+              'ΑΔΙΑΦΑΝΗ: το κείμενο γράφεται πάντα πάνω σε μαύρο, οπότε δεν\n'
+              'κουβαλάει μάσκα (16 bytes ο χαρακτήρας, όχι 32).')
     for ch, img in FO.sheet():
-        g.add('ch_%d' % ord(ch), "'%s'" % (ch if ch != ' ' else 'κενό'), img)
+        solid = [[0 if v is None else v for v in row] for row in img]
+        g.add('ch_%d' % ord(ch), "'%s'" % (ch if ch != ' ' else 'κενό'), solid,
+              masked=False)
     groups.append(g)
 
     # ------------------------------------------------------------ γράψε
