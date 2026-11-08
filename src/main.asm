@@ -1,4 +1,4 @@
-; main.asm — Space Force C, M7: εχθροί και εχθρικά όπλα
+; main.asm — Space Force C, M8: power-ups
 ;
 ; Το σκάφος κινείται με κέρσορες / QAOP / joystick σε χάρτη 64x48
 ; πλακιδίων (4 οθόνες επί 2) και η κάμερα το ακολουθεί με hardware scroll
@@ -7,8 +7,8 @@
 ; (actors.asm) ως sprites με clip και save-under (sprites.asm). Το σκάφος
 ; έχει αδράνεια, φλόγα, καπνό στη Γη και πιλότους που ουρλιάζουν στις
 ; απότομες στροφές (ship.asm). Fire (Space / joystick) ρίχνει με το τρέχον
-; όπλο, W = επόμενο όπλο, U = αναβάθμιση μπαγκέτας (weapons.asm),
-; E = διάστημα <-> Γη, ESC = παύση.
+; όπλο, W = επόμενο όπλο (weapons.asm), E = διάστημα <-> Γη, ESC = παύση.
+; Οι εχθροί αφήνουν μυρμήγκια και power-ups (items.asm).
 ; Με make PROFILE=1 το border δείχνει τον χρόνο κάθε φάσης (hw.asm).
 ;
 ; Memory map (RAM config C0 σε όλο το παιχνίδι, εκτός από τις προσβάσεις
@@ -243,6 +243,7 @@ draw_hud_game:
         ld b,16
         ld c,28
         call print_u16
+        call draw_powerups
         jp draw_weapon
 
 txt_score:  db "SCORE",0
@@ -343,6 +344,7 @@ dir_table:
         include "ship.asm"
         include "weapons.asm"
         include "hazards.asm"
+        include "items.asm"
         include "text.asm"
 
 ; Γραφικά (assets/data, παράγονται από assets/src/make_assets.py)
@@ -371,7 +373,6 @@ hud_dirty:   db 0
 weapon:      db WP_DISCO
 baguette_level: db 1
 fire_cool:   db 0
-upgrade_key: db 0
 shot_kind:   db 0
 hit_x:       db 0
 hit_y:       dw 0
@@ -384,7 +385,17 @@ gameover:    db 0
 status_text: dw 0
 status_timer: db 0
 status_new:  db 0
-ant_timer:   ds ANT_N
+shield:      db 0
+espresso:    db 0
+magnet:      db 0
+spray:       db 0
+spray_dir:   db 0
+spray_cool:  db 1
+engine:      db 0
+item_dx:     db 0
+item_cur:    db 0
+item_timer:  ds ITEM_N
+item_type:   ds ITEM_N          ; (ακριβώς μετά το item_timer)
 ship_dir:    db ship_space_n
 ship_world:  db 0
 cam_x:       db CAM_START_X

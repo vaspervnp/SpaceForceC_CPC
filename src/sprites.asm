@@ -19,7 +19,7 @@
 ; σωσμένα bytes. Αν η στοίβα δεν χωράει το χειρότερο sprite, το sprite
 ; παραλείπεται σε αυτό το καρέ (δεν ξεχειλίζει ποτέ).
 
-SPR_MAX         equ 28
+SPR_MAX         equ 29
 SPR_FLAGS       equ 0           ; 0 = ελεύθερο
 SPR_X           equ 1           ; world X (bytes)
 SPR_Y           equ 2           ; world Y (γραμμές, 16-bit)

@@ -266,7 +266,7 @@ update_actors:
         inc hl
         inc hl
         ld a,(hl)               ; KI_ANTS
-        call drop_ants
+        call drop_items
         jr .next
 
 .dead:  dec (ix+EN_TIMER)

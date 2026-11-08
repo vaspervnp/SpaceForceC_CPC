@@ -8,7 +8,7 @@
 ; Στο διάστημα το σκάφος γλιστράει (τριβή 1), στη Γη η ατμόσφαιρα το
 ; φρενάρει (τριβή 3). Επιτάχυνση 2: τελική ταχύτητα σε 8 καρέ (0,3 s).
 
-SHIP_VMAX       equ 16
+SHIP_VMAX       equ 16          ; βασική· +4 ανά engine, +8 με espresso (ως 32)
 SHIP_ACC        equ 2
 FRICTION_SPACE  equ 1
 FRICTION_EARTH  equ 3
@@ -45,6 +45,27 @@ move_ship:
         ld a,SCREAM_TIME
         ld (scream),a
 .keep:
+        ; --- μέγιστη ταχύτητα: 16 + 4*engine (+8 espresso). Ως 32 = 2 bytes ή
+        ; 8 γραμμές ανά καρέ, όσο και η κάμερα: την προλαβαίνει ακόμα.
+        ld a,(engine)
+        add a,a
+        add a,a
+        add a,SHIP_VMAX
+        ld b,a
+        ld a,(espresso)
+        or a
+        ld a,b
+        jr z,$+4
+        add a,8
+        ld (.vp1+1),a
+        ld (.vp2+1),a
+        neg
+        ld (.vm1+1),a
+        ld (.vm2+1),a
+        ld a,(.vp1+1)
+        inc a
+        ld (.vp1+1),a
+
         ; --- τριβή του κόσμου
         ld a,(ship_world)
         or a
@@ -115,15 +136,15 @@ move_ship:
         jr z,.plus
         sub SHIP_ACC
         jp p,.st
-        cp -SHIP_VMAX
+.vm1:   cp -SHIP_VMAX
         jr nc,.st
-        ld a,-SHIP_VMAX
+.vm2:   ld a,-SHIP_VMAX
         jr .st
 .plus:  add a,SHIP_ACC
         jp m,.st
-        cp SHIP_VMAX+1
+.vp1:   cp SHIP_VMAX+1
         jr c,.st
-        ld a,SHIP_VMAX
+.vp2:   ld a,SHIP_VMAX
 .st:    ld (hl),a
         ret
 .friction:
@@ -401,6 +422,10 @@ update_scream:
         ld hl,txt_scream0
         jr z,$+5
         ld hl,txt_scream1
+        ld a,(espresso)         ; με espresso μιλάνε 3x πιο γρήγορα
+        or a
+        jr z,$+5
+        ld hl,txt_scream2
         ld b,SCREAM_Y
         ld c,SCREAM_X
         call print_str
@@ -414,4 +439,5 @@ update_scream:
 
 txt_scream0:  db "AAAAAAH!",0
 txt_scream1:  db "MAMAAA!!",0
+txt_scream2:  db "AH!AH!AH",0
 txt_noscream: db "        ",0

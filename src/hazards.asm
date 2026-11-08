@@ -7,8 +7,8 @@
 ;   επαφή με εχθρό     κοστίζει ζωή, και ο εχθρός σκάει
 ;
 ; Μετά από ζημιά, 2 s άτρωτο (το σκάφος αναβοσβήνει). Με 0 ζωές: GAME OVER
-; για 3 s και ξανά από την αρχή. Οι εχθροί που σκάνε αφήνουν μυρμήγκια:
-; όποιο αγγίξει το σκάφος σώζεται (+50) και μετράει στο HUD.
+; για 3 s και ξανά από την αρχή. Το Bubble Wrap (items.asm) απορροφά ένα
+; χτύπημα.
 
 GUN_NONE        equ 0
 GUN_E9          equ 1
@@ -17,8 +17,6 @@ GUN_TORPEDO     equ 3
 
 ESHOT_N         equ 5
 ESHOT_SLOT      equ SHOT_SLOT+SHOT_N    ; 19-23
-ANT_N           equ 2
-ANT_SLOT        equ ESHOT_SLOT+ESHOT_N  ; 24-25
 
 ; Ανά εχθρικό βλήμα
 ES_VX           equ 0
@@ -35,8 +33,6 @@ SLOW_TIME       equ 75          ; 3 s
 INVULN_TIME     equ 50          ; 2 s
 GAMEOVER_TIME   equ 75
 START_LIVES     equ 3
-ANT_LIFE        equ 250         ; 10 s και μετά τα ξαναπαίρνουν
-ANT_SCORE       equ 50
 
 ; Το «σώμα» του σκάφους για τις συγκρούσεις: λίγο μικρότερο από τα 12x24,
 ; ώστε να μη χτυπάει από μια γωνία που ίσα-ίσα ακούμπησε.
@@ -350,6 +346,8 @@ ship_hit:
         ld a,(invuln)
         or a
         ret nz
+        call use_shield
+        ret c
         ld a,INVULN_TIME
         ld (invuln),a
         ld a,1
@@ -376,6 +374,12 @@ update_hazards:
         or a
         jr z,$+3
         dec (hl)
+        ld hl,espresso
+        call .tick
+        ld hl,magnet
+        call .tick
+        ld hl,spray
+        call .tick
         ld hl,gameover
         ld a,(hl)
         or a
@@ -388,124 +392,32 @@ update_hazards:
         ld hl,0
         ld (score),hl
         ld (ants_saved),hl
-        ld a,1
+        xor a
+        ld (shield),a
+        ld (espresso),a
+        ld (magnet),a
+        ld (spray),a
+        ld (engine),a
+        inc a
+        ld (baguette_level),a
         ld (hud_dirty),a
         ld hl,txt_clear
         call set_status
 .ok:    call check_ship_enemies
         call update_enemy_shots
-        jp update_ants
+        jp update_items
 
-;------------------------------------------------------------------
-; Μυρμήγκια
-;------------------------------------------------------------------
-
-; Αφήνει A μυρμήγκια στη θέση του sprite IY (η έκρηξη), το ένα δίπλα στο άλλο.
-drop_ants:
+; Χρονόμετρο power-up (HL): στο 0 σβήνει η ένδειξη στο HUD.
+.tick:  ld a,(hl)
         or a
         ret z
-        push ix
-        ld b,a
-        ld c,0                  ; μετατόπιση x
-        ld hl,ant_timer
-        ld ix,spr_table+ANT_SLOT*SPR_SIZE
-        ld e,ANT_N
-.find:  ld a,(hl)
-        or a
-        jr nz,.busy
-        ld (hl),ANT_LIFE
-        ld a,(iy+SPR_X)
-        add a,c
-        cp WORLD_W-4+1
-        jr c,$+4
-        ld a,WORLD_W-4
-        ld (ix+SPR_X),a
-        ld a,(iy+SPR_Y)
-        ld (ix+SPR_Y),a
-        ld a,(iy+SPR_Y+1)
-        ld (ix+SPR_Y+1),a
-        ld a,c
-        add a,4
-        ld c,a
-        dec b
-        jr z,.done
-.busy:  inc hl
-        push de
-        ld de,SPR_SIZE
-        add ix,de
-        pop de
-        dec e
-        jr nz,.find
-.done:  pop ix
-        ret
-
-; Τα μυρμήγκια: δύο καρέ, σβήνουν σε 10 s, σώζονται όταν τα αγγίξει το σκάφος.
-update_ants:
-        ld hl,ant_timer
-        ld iy,spr_table+ANT_SLOT*SPR_SIZE
-        ld b,ANT_N
-.ant:   push bc
-        push hl
-        ld (iy+SPR_FLAGS),0
-        ld a,(hl)
-        or a
-        jr z,.next
         dec (hl)
-        jr z,.next
-        ld (iy+SPR_FLAGS),1
-        ; γραφικό: ant0/ant1 ανά 4 καρέ, από το pickups_table (bank 5)
-        ld a,(frames)
-        rrca
-        rrca
-        and 1
-        add a,ant0
-        RAM_ENEMIES
-        ld l,a
-        ld h,0
-        add hl,hl
-        add hl,hl               ; *4: db w,h / dw offset
-        ld de,pickups_table
-        add hl,de
-        ld a,(hl)
-        ld (iy+SPR_W),a
-        inc hl
-        ld a,(hl)
-        ld (iy+SPR_H),a
-        inc hl
-        ld e,(hl)
-        inc hl
-        ld d,(hl)
-        ld hl,pickups_gfx
-        add hl,de
-        ld (iy+SPR_GFX),l
-        ld (iy+SPR_GFX+1),h
-        ld (iy+SPR_BANK),BANK_ENEMIES
-        RAM_WORLD
-        ld a,(gameover)
-        or a
-        jr nz,.next
-        call hits_ship
-        jr nc,.next
-        pop hl                  ; σώθηκε
-        ld (hl),0
-        push hl
-        ld (iy+SPR_FLAGS),0
-        ld hl,(ants_saved)
-        inc hl
-        ld (ants_saved),hl
-        ld hl,(score)
-        ld de,ANT_SCORE
-        add hl,de
-        ld (score),hl
+        ret nz
         ld a,1
         ld (hud_dirty),a
-.next:  ld de,SPR_SIZE
-        add iy,de
-        pop hl
-        inc hl
-        pop bc
-        djnz .ant
         ret
+
+
 
 ;------------------------------------------------------------------
 ; Μηνύματα στο HUD (γραμμή 24, αριστερά)
@@ -531,6 +443,10 @@ update_status:
         jr z,.wait
         xor a
         ld (status_new),a
+        ld hl,txt_clear         ; τα κείμενα έχουν διαφορετικό μήκος
+        ld b,STATUS_Y
+        ld c,STATUS_X
+        call print_str
         ld hl,(status_text)
         ld b,STATUS_Y
         ld c,STATUS_X
@@ -552,4 +468,4 @@ txt_pasta:    db "SPAGHETTI!  ",0
 txt_e9:       db "E9 TAX FORM!",0
 txt_ouch:     db "OUCH!       ",0
 txt_gameover: db "GAME OVER   ",0
-txt_clear:    db "            ",0
+txt_clear:    db "             ",0       ; 13: όσο το μεγαλύτερο όνομα όπλου

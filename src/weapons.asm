@@ -7,8 +7,9 @@
 ;   Sneeze Cannon   πράσινο spray που απλώνει, κοντινό, με ανάκρουση
 ;
 ; Τα βλήματα είναι sprites 8x8 (shots.asm, bank 4) στα slots SHOT_SLOT..+5.
-; Fire = ρίχνει (με ρυθμό ανά όπλο), W = επόμενο όπλο, U = αναβάθμιση
-; μπαγκέτας (δοκιμή, ως το M8 που έρχονται τα power-ups).
+; Fire = ρίχνει (με ρυθμό ανά όπλο), W = επόμενο όπλο. Τα power-ups όπλων
+; (items.asm) διαλέγουν όπλο και ανεβάζουν τη μπαγκέτα. Με το Insecticide
+; ψεκάζει μόνο του σε κύκλο.
 
 SHOT_N          equ 6
 SHOT_SLOT       equ SMOKE_SLOT+SMOKE_N  ; 13-18
@@ -40,6 +41,7 @@ SNEEZE_COOL     equ 2
 SNEEZE_SPEED    equ 1
 SNEEZE_LIFE     equ 9
 SNEEZE_RECOIL   equ 3
+SPRAY_EVERY     equ 5
 
 update_weapons:
         ; --- W: επόμενο όπλο
@@ -55,27 +57,6 @@ update_weapons:
         ld a,1
         ld (hud_dirty),a
 .noswitch:
-        ; --- U: αναβάθμιση μπαγκέτας (γραμμή 5, bit 2), μόνο στο πάτημα
-        ld a,(keymap+5)
-        cpl
-        and %00000100
-        ld hl,upgrade_key
-        ld b,(hl)               ; B = πριν
-        ld (hl),a               ; A = τώρα
-        or a
-        jr z,.noup
-        ld a,b
-        or a
-        jr nz,.noup
-        ld a,(baguette_level)
-        inc a
-        cp 4
-        jr c,$+4
-        ld a,1
-        ld (baguette_level),a
-        ld a,1
-        ld (hud_dirty),a
-.noup:
         ; --- Fire
         ld hl,fire_cool
         ld a,(hl)
@@ -85,8 +66,22 @@ update_weapons:
         jr .move
 .ready: ld a,(input)
         and IN_FIRE
-        jr z,.move
+        jr z,.auto
         call fire
+.auto:  ; --- Insecticide: ένας ψεκασμός ανά SPRAY_EVERY καρέ, γύρω-γύρω
+        ld a,(spray)
+        or a
+        jr z,.move
+        ld hl,spray_cool
+        dec (hl)
+        jr nz,.move
+        ld (hl),SPRAY_EVERY
+        ld a,(spray_dir)
+        inc a
+        and 7
+        ld (spray_dir),a
+        ld c,WP_SNEEZE
+        call spawn_shot
 .move:  ; --- κίνηση, ζωή, συγκρούσεις
         ld ix,shots
         ld iy,spr_table+SHOT_SLOT*SPR_SIZE

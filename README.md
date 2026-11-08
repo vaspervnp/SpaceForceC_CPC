@@ -8,18 +8,19 @@ Arcade multi-directional scrolling shooter για τον **Amstrad CPC 6128** σ
 
 Έχουν γίνει το M0 (build pipeline), το M2 (engine core), το M3
 (multi-directional scrolling), το M4 (sprite engine), το M5 (το σκάφος), το
-M6 (τα όπλα) και το M7 (οι εχθροί και τα όπλα τους).
+M6 (τα όπλα), το M7 (οι εχθροί και τα όπλα τους) και το M8 (power-ups).
 Το demo οδηγεί το σκάφος, με αδράνεια και φλόγα εξάτμισης, σε χάρτη 4x2
 οθονών με hardware scroll, στα 25 FPS με double buffering, με HUD σε split
 screen και 10 εχθρούς με δική τους συμπεριφορά: σχηματισμοί, κύκλοι,
 κυνηγητό, νάρκες. Ρίχνουν Laser Spaghetti (επιβραδύνει), έντυπα Ε9 (κολλάνε
 στο παρμπρίζ) και τορπίλες που κάνουν zigzag. 3 ζωές, και τα μυρμήγκια που
-αφήνουν οι εχθροί σώζονται αν τα αγγίξεις. Τρία όπλα: το Disco-Ray
+αφήνουν οι εχθροί σώζονται αν τα αγγίξεις. Πέφτουν και power-ups: Bubble
+Wrap, Espresso, Ant-Magnet, Engine, Insecticide, όπλα, ζωή. Τρία όπλα: το Disco-Ray
 βάζει τους εχθρούς να χορεύουν Macarena πριν σκάσουν, η μπαγκέτα τους
 διαπερνάει, το φτάρνισμα ψεκάζει (με ανάκρουση). Στη Γη το σκάφος αφήνει
 καπνό· στις απότομες στροφές οι πιλότοι ουρλιάζουν.
 Χειρισμός: κέρσορες / QAOP / joystick, Space / Fire = βολή, W = όπλο,
-ESC = παύση. Για δοκιμή: E = διάστημα/Γη, U = αναβάθμιση μπαγκέτας.
+ESC = παύση. Για δοκιμή: E = διάστημα/Γη.
 
 - [design_document.md](design_document.md): το game design document
 - [todo.md](todo.md): τα milestones της ανάπτυξης
