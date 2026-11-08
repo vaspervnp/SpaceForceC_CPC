@@ -35,7 +35,7 @@ TILES = open(os.path.join(ROOT, "assets/data/tiles.bin"), "rb").read()
 
 MAP_W, MAP_H, VIEW_W, VIEW_H = 64, 48, 40, 21
 BUF_SIZE = 7
-REC_SIZE = 7
+REC_SIZE = 8
 
 SCENARIOS = [
     ("right", JOY_RIGHT, 120),

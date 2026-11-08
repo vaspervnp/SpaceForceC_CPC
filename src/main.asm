@@ -1,4 +1,4 @@
-; main.asm — Space Force C, M6: τα όπλα
+; main.asm — Space Force C, M7: εχθροί και εχθρικά όπλα
 ;
 ; Το σκάφος κινείται με κέρσορες / QAOP / joystick σε χάρτη 64x48
 ; πλακιδίων (4 οθόνες επί 2) και η κάμερα το ακολουθεί με hardware scroll
@@ -14,13 +14,14 @@
 ; Memory map (RAM config C0 σε όλο το παιχνίδι, εκτός από τις προσβάσεις
 ; στα banks):
 ;   #0000-#003F  vectors (IM 1: JP int_handler στο #38)
-;   #0040-#0FFF  stack (από το #1000 προς τα κάτω)
+;   #0040-#0F3F  save-under των sprites, 2 x 1920 (sprites.asm)
+;   #0F40-#0FFF  stack (από το #1000 προς τα κάτω, 192 bytes)
 ;   #1000-#3FFF  κώδικας + μόνιμα δεδομένα (12K)
 ;   #4000-#7FFF  παράθυρο banks. Δύο ρυθμίσεις μνήμης:
 ;                C4 (RAM_WORLD, σχεδόν πάντα): το bank 4 = ο κόσμος
 ;                  #4000 χάρτης (3K), #4C00 μισά πλακίδια (512),
 ;                  #4E00- GFX4.BIN: πλακίδια, σκάφος, fx, βλήματα
-;                C5 (RAM_ENEMIES, ανά sprite): GFX5.BIN, οι εχθροί
+;                C5 (RAM_ENEMIES, ανά sprite): GFX5.BIN, εχθροί, pickups
 ;                C0 (RAM_HUD, μόνο όσο γράφεται το HUD): η φυσική
 ;                  σελίδα, με το HUD στα #x6C0-#x7FF κάθε block των 2K
 ;                Το DISC.BAS φορτώνει το GFX4.BIN κατευθείαν στο bank 4.
@@ -117,6 +118,7 @@ main_loop:
         call update_weapons
         call update_camera
         call update_actors
+        call update_hazards
         call update_ship_sprites
         call page_buf           ; IX = η σελίδα που ζωγραφίζουμε
 
@@ -148,6 +150,13 @@ main_loop:
         call update_scream
         RAM_WORLD
 .noscream:
+        ld a,(status_timer)
+        or a
+        jr z,.nostatus
+        RAM_HUD
+        call update_status
+        RAM_WORLD
+.nostatus:
         ld a,(hud_dirty)
         or a
         jr z,.noscore
@@ -198,9 +207,13 @@ draw_hud_static:
         ld c,0
         call print_str
         call draw_hud_game
-        ld hl,txt_frames
+        ld hl,txt_lives
         ld b,16
         ld c,0
+        call print_str
+        ld hl,txt_ants
+        ld b,16
+        ld c,18
         call print_str
         ld hl,txt_late
         ld b,16
@@ -208,10 +221,6 @@ draw_hud_static:
         jp print_str
 
 draw_hud:
-        ld hl,(frames)
-        ld b,16
-        ld c,14
-        call print_u16
         ld hl,(late_frames)
         ld b,16
         ld c,50
@@ -225,10 +234,20 @@ draw_hud_game:
         ld b,8
         ld c,12
         call print_u16
+        ld a,(lives)
+        add a,'0'
+        ld b,16
+        ld c,12
+        call print_char
+        ld hl,(ants_saved)
+        ld b,16
+        ld c,28
+        call print_u16
         jp draw_weapon
 
 txt_score:  db "SCORE",0
-txt_frames: db "FRAMES",0
+txt_lives:  db "LIVES",0
+txt_ants:   db "ANTS",0
 txt_late:   db "LATE",0
 
 ; out: IX -> κατάσταση της σελίδας που ζωγραφίζουμε
@@ -323,6 +342,7 @@ dir_table:
         include "actors.asm"
         include "ship.asm"
         include "weapons.asm"
+        include "hazards.asm"
         include "text.asm"
 
 ; Γραφικά (assets/data, παράγονται από assets/src/make_assets.py)
@@ -355,6 +375,16 @@ upgrade_key: db 0
 shot_kind:   db 0
 hit_x:       db 0
 hit_y:       dw 0
+es_gun:      db 0
+lives:       db START_LIVES
+ants_saved:  dw 0
+invuln:      db 0
+slowed:      db 0
+gameover:    db 0
+status_text: dw 0
+status_timer: db 0
+status_new:  db 0
+ant_timer:   ds ANT_N
 ship_dir:    db ship_space_n
 ship_world:  db 0
 cam_x:       db CAM_START_X
@@ -387,7 +417,12 @@ sp_ylast:    dw 0
 line_y:      dw 0
 line_n:      db 0
 save_ptr:    dw 0
+save_limit:  dw 0
 rec_ptr:     dw 0
+rows_ptr:    dw 0
+put_rows:    db 0
+back_rows:   db 0
+row_slow:    db 0
 rect_x:      db 0               ; fill_map_rect
 rect_y:      db 0
 rect_w:      db 0
@@ -404,11 +439,15 @@ keymap      equ row40+2*MAP_H           ; 10 bytes
 spr_table   equ keymap+10               ; SPR_MAX x SPR_SIZE
 enemies     equ spr_table+SPR_MAX*SPR_SIZE      ; ENEMY_N x EN_SIZE
 shots       equ enemies+ENEMY_N*EN_SIZE ; SHOT_N x SH_SIZE
-recs0       equ shots+SHOT_N*SH_SIZE    ; εγγραφές sprites, σελίδα #80
+eshots      equ shots+SHOT_N*SH_SIZE    ; ESHOT_N x ES_SIZE
+recs0       equ eshots+ESHOT_N*ES_SIZE  ; εγγραφές sprites, σελίδα #80
 recs1       equ recs0+SPR_MAX*REC_SIZE  ; σελίδα #C0
-save0       equ recs1+SPR_MAX*REC_SIZE  ; bytes κάτω από τα sprites, #80
-save1       equ save0+SAVE_SIZE         ; #C0
-ram_end     equ save1+SAVE_SIZE
+ram_end     equ recs1+SPR_MAX*REC_SIZE
+
+; Τα bytes κάτω από τα sprites, στη χαμηλή μνήμη (κάτω από τη στοίβα)
+save0       equ #0040                   ; σελίδα #80 (μετά τα vectors)
+save1       equ save0+SAVE_SIZE         ; σελίδα #C0
+        assert save1+SAVE_SIZE <= STACK_TOP-#C0, "save-under overlaps the stack"
 
         assert ram_end <= #4000, "code + data overflow into the bank window"
 
@@ -455,6 +494,7 @@ gfx4_end:
         org #4000
 gfx5_data:
         include "../assets/data/enemies.asm"
+        include "../assets/data/pickups.asm"    ; μυρμήγκια (και τα power-ups του M8)
 gfx5_end:
 
         assert gfx5_end <= #8000, "bank 5 is full"

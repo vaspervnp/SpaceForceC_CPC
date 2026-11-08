@@ -14,9 +14,12 @@
 ; ξαναγράφει το scroll.
 ;
 ; Κόστος: blit + save 17 µs/byte, επαναφορά 6 µs/byte (LDIR), συν ~30 µs
-; ανά γραμμή και ~100 µs ανά σειρά χαρακτήρων.
+; ανά γραμμή και ~100 µs ανά σειρά χαρακτήρων. Η επαναφορά δεν υπολογίζει
+; διευθύνσεις: το spr_put γράφει μια κεφαλίδα 4 bytes ανά σειρά μαζί με τα
+; σωσμένα bytes. Αν η στοίβα δεν χωράει το χειρότερο sprite, το sprite
+; παραλείπεται σε αυτό το καρέ (δεν ξεχειλίζει ποτέ).
 
-SPR_MAX         equ 24
+SPR_MAX         equ 28
 SPR_FLAGS       equ 0           ; 0 = ελεύθερο
 SPR_X           equ 1           ; world X (bytes)
 SPR_Y           equ 2           ; world Y (γραμμές, 16-bit)
@@ -26,8 +29,11 @@ SPR_H           equ 7           ; γραμμές
 SPR_BANK        equ 8           ; ρύθμιση μνήμης: #C4 = bank 4, #C5 = bank 5
 SPR_SIZE        equ 9
 
-REC_SIZE        equ 7           ; x, y(2), w, h, σωσμένα(2)
-SAVE_SIZE       equ 2048        ; bytes ανά σελίδα
+REC_SIZE        equ 8           ; x, y(2), w, h, σειρές, σωσμένα(2)
+REC_ROWS        equ 5
+REC_SAVE        equ 6
+SAVE_MARGIN     equ 640         ; το μεγαλύτερο sprite (12x48) + κεφαλίδες
+SAVE_SIZE       equ #780        ; bytes ανά σελίδα
 
 ; Σβήνει τα sprites της σελίδας IX (επαναφέρει το φόντο).
 sprites_restore:
@@ -36,36 +42,30 @@ sprites_restore:
         ret z
         ld b,a
         ld (ix+BUF_NREC),0
-        ; τελευταία εγγραφή = recs + (n-1)*7
+        ; τελευταία εγγραφή = recs + (n-1)*REC_SIZE
         ld l,(ix+BUF_RECS)
         ld h,(ix+BUF_RECS+1)
         ld de,REC_SIZE
         dec a
-        jr z,.first
+        jr z,.rec
 .mul:   add hl,de
         dec a
         jr nz,.mul
-.first:
 .rec:   push bc
         push hl
-        ld a,(hl)
-        ld (sp_x),a
-        inc hl
-        ld e,(hl)
-        inc hl
-        ld d,(hl)
-        inc hl
-        ld (sp_y),de
-        ld a,(hl)
+        ld de,3
+        add hl,de
+        ld a,(hl)               ; w
         ld (sp_w),a
         inc hl
-        ld a,(hl)
-        ld (sp_h),a
+        inc hl
+        ld a,(hl)               ; σειρές
+        ld (back_rows),a
         inc hl
         ld e,(hl)
         inc hl
         ld d,(hl)
-        ex de,hl                ; HL = σωσμένα bytes
+        ex de,hl                ; HL = σωσμένα bytes, με τις κεφαλίδες τους
         call spr_back
         pop hl
         ld de,-REC_SIZE
@@ -79,6 +79,9 @@ sprites_draw:
         ld l,(ix+BUF_SAVE)
         ld h,(ix+BUF_SAVE+1)
         ld (save_ptr),hl
+        ld de,SAVE_SIZE-SAVE_MARGIN
+        add hl,de
+        ld (save_limit),hl
         ld l,(ix+BUF_RECS)
         ld h,(ix+BUF_RECS+1)
         ld (rec_ptr),hl
@@ -90,7 +93,12 @@ sprites_draw:
         jr z,.next
         call spr_clip
         jr c,.next              ; εκτός κάμερας
-        ; εγγραφή: x, y, w, h, πού σώζονται
+        ld hl,(save_ptr)        ; χωράει το χειρότερο sprite; αλλιώς παράλειψη
+        ld de,(save_limit)
+        or a
+        sbc hl,de
+        jr nc,.next
+        ; εγγραφή: x, y, w, h, σειρές (μετά), πού σώζονται
         ld hl,(rec_ptr)
         ld a,(sp_x)
         ld (hl),a
@@ -106,6 +114,8 @@ sprites_draw:
         ld a,(sp_h)
         ld (hl),a
         inc hl
+        ld (rows_ptr),hl        ; οι σειρές γράφονται μετά το blit
+        inc hl
         ld de,(save_ptr)
         ld (hl),e
         inc hl
@@ -116,7 +126,12 @@ sprites_draw:
         ld b,#7F                ; το bank του γραφικού στο #4000
         ld a,(iy+SPR_BANK)
         out (c),a
+        xor a
+        ld (put_rows),a
         call spr_put
+        ld hl,(rows_ptr)
+        ld a,(put_rows)
+        ld (hl),a
 .next:  ld de,SPR_SIZE
         add iy,de
         pop bc
@@ -294,13 +309,36 @@ spr_put:
         ld hl,(save_ptr)
         exx
 .row:   call row_setup          ; DE, IYL = γραμμές
+        ld hl,put_rows
+        inc (hl)
+        xor a                   ; περνάει η σειρά το #x7FF; (A = 1)
+        ld b,a
         ld a,d
         and 7
         cp 7
-        jr nz,.fast
+        jr nz,.hdr
         ld a,e
 .wc:    add a,0
-        jr c,.slow
+        rl b
+.hdr:   ld a,b
+        ld (row_slow),a
+        ; κεφαλίδα στα σωσμένα: διεύθυνση, περνάει;, γραμμές
+        push de
+        exx
+        pop de
+        ld (hl),e
+        inc hl
+        ld (hl),d
+        inc hl
+        ld (hl),a
+        inc hl
+        ld a,iyl
+        ld (hl),a
+        inc hl
+        exx
+        ld a,(row_slow)
+        or a
+        jr nz,.slow
 .fast:  ld hl,(sp_cur)
         di
         ld (.sp+1),sp
@@ -352,7 +390,7 @@ spr_put:
 .rowdone:
         ld a,(line_n)
         or a
-        jr nz,.row
+        jp nz,.row
         exx
         ld (save_ptr),hl
         exx
@@ -380,28 +418,26 @@ put_unroll_end:
 
         assert put_unroll_end-put_unroll == PUT_LEN*PUT_MAX_W, "PUT_LEN"
 
-; Γράφει πίσω τα σωσμένα bytes μιας εγγραφής, ανά σειρά όπως το spr_put.
-; in: HL = σωσμένα, sp_x, sp_y, sp_w, sp_h
+; Γράφει πίσω τα σωσμένα bytes μιας εγγραφής. Κάθε σειρά χαρακτήρων
+; ξεκινάει με την κεφαλίδα που έγραψε το spr_put (διεύθυνση, περνάει το
+; #x7FF;, γραμμές), οπότε εδώ δεν υπολογίζεται καμία διεύθυνση.
+; in: HL = σωσμένα, sp_w, back_rows
 spr_back:
         push iy
-        ld (sp_cur),hl
         ld a,(sp_w)
         ld (.wf+1),a
         ld (.ws+1),a
-        ld (.wc+1),a
-        ld a,(sp_h)
-        ld (line_n),a
-        ld hl,(sp_y)
-        ld (line_y),hl
-.row:   call row_setup
-        ld hl,(sp_cur)
-        ld a,d
-        and 7
-        cp 7
-        jr nz,.fast
-        ld a,e
-.wc:    add a,0
-        jr c,.slow
+.row:   ld e,(hl)
+        inc hl
+        ld d,(hl)
+        inc hl
+        ld a,(hl)               ; 1 = περνάει το #x7FF
+        inc hl
+        ld c,(hl)               ; γραμμές
+        inc hl
+        ld iyl,c
+        or a
+        jr nz,.slow
 .fast:  push de
 .wf:    ld bc,0
         ldir
@@ -430,9 +466,9 @@ spr_back:
         dec iyl
         jr nz,.slow
 .rowdone:
-        ld (sp_cur),hl
-        ld a,(line_n)
-        or a
+        ld a,(back_rows)
+        dec a
+        ld (back_rows),a
         jr nz,.row
         pop iy
         ret

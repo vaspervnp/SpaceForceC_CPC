@@ -394,7 +394,7 @@ shot_hits:
         ld (ix+EN_STATE),ST_DANCE
         ld (ix+EN_TIMER),DANCE_TIME
         jr .hit
-.boom:  call enemy_explode
+.boom:  call enemy_damage
 .hit:   pop bc
         pop iy
         pop ix

@@ -72,6 +72,7 @@ move_ship:
         ; --- X16 += vx, όρια [0, SHIP_MAX_X*16]
         ld hl,(ship_x16)
         ld a,(ship_vx)
+        call .slow
         call .add_signed
         ld de,SHIP_MAX_X*16
         ld bc,ship_vx
@@ -90,6 +91,7 @@ move_ship:
         ; --- Y4 += vy, όρια [0, SHIP_MAX_Y*4]
         ld hl,(ship_y4)
         ld a,(ship_vy)
+        call .slow
         call .add_signed
         ld de,SHIP_MAX_Y*4
         ld bc,ship_vy
@@ -138,6 +140,15 @@ move_ship:
         jr nc,.st
         xor a
         jr .st
+
+; Laser Spaghetti (hazards.asm): η κίνηση στο μισό.
+.slow:  ld b,a
+        ld a,(slowed)
+        or a
+        ld a,b
+        ret z
+        sra a
+        ret
 
 ; HL += A (με πρόσημο)
 .add_signed:
@@ -191,6 +202,35 @@ update_ship_sprites:
         jr nz,.mul
 .got:   ld (iy+SPR_GFX),l
         ld (iy+SPR_GFX+1),h
+        ld a,(gameover)         ; game over: η μεγάλη έκρηξη, μετά τίποτα
+        or a
+        jr z,.alive
+        ld b,a
+        ld a,GAMEOVER_TIME
+        sub b                   ; καρέ από τη ζημιά
+        ld c,0
+.div3:  sub 3
+        jr c,.d3
+        inc c
+        jr .div3
+.d3:    ld a,c
+        cp 5
+        jr nc,.hide
+        add a,fx_boomb0         ; (6x24, ίδιο πλαίσιο με το σκάφος)
+        call fx_frame
+        jr .noflame
+.alive: ld a,(invuln)           ; άτρωτο: αναβοσβήνει
+        or a
+        jr z,.solid
+        ld a,(frames)
+        and 2
+        jr nz,.solid
+.hide:  ld (iy+SPR_FLAGS),0
+.noflame:
+        ld iy,spr_table+FLAME_SLOT*SPR_SIZE
+        ld (iy+SPR_FLAGS),0
+        jp .age                 ; χωρίς φλόγα και χωρίς νέο καπνό
+.solid:
 
         ; --- η φλόγα: μόνο με ώθηση, στην ουρά της κατεύθυνσης
         ld iy,spr_table+FLAME_SLOT*SPR_SIZE
