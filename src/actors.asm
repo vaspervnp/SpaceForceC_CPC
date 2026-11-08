@@ -60,7 +60,7 @@ kind_info:
         db AI_CIRCLE,GUN_SPAGHETTI,2,1,70   ; δίσκος: Laser Spaghetti
         db AI_BOUNCE,GUN_NONE,     3,1,0    ; βαλίτσα: αργή, αντέχει
         db AI_CHASE, GUN_TORPEDO,  3,2,60   ; κατσαρίδα-διοικητής
-        db AI_STATIC,GUN_NONE,     BOSS_HP,3,0  ; boss (κινείται στο boss.asm)
+        db AI_STATIC,GUN_NONE,     0,3,0    ; boss (όλα τα άλλα στο boss.asm)
 
 ; Οι πρώτοι ENEMY_N της λίστας της πίστας (level.asm), όπου κι αν είναι.
 init_actors:

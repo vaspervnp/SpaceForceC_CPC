@@ -161,12 +161,17 @@ EN_SIZE, EN_KIND, EN_STATE, EN_HP = 11, 5, 6, 8
 KIND_BOSS = 12
 
 
-def boss_flow(c, s):
-    """Τέλος λίστας -> boss -> μάχη με fire προς τα πάνω -> Level Complete."""
+def clear_enemies(c, s):
+    """Τέλος της λίστας της πίστας, όλοι οι εχθροί νεκροί."""
     c.poke(s["spawn_left"], 0)
-    for i in range(10):             # όλοι οι εχθροί: επόμενος της λίστας τώρα
+    for i in range(10):
         c.poke(s["enemies"] + i * EN_SIZE + EN_STATE, 3)
         c.poke(s["enemies"] + i * EN_SIZE + 7, 1)
+
+
+def boss_flow(c, s):
+    """Τέλος λίστας -> boss -> μάχη με fire προς τα πάνω -> Level Complete."""
+    clear_enemies(c, s)
     c.run_frames(10)
     slots = [i for i in range(10)
              if c.peek(s["enemies"] + i * EN_SIZE + EN_KIND) == KIND_BOSS
@@ -183,12 +188,12 @@ def boss_flow(c, s):
     c.poke(s["ship_dir"], 0)        # κοιτάει πάνω (n)
     c.poke(s["invuln"], 250)
     c.run_frames(150)               # ως να φτάσει ο boss
-    c.screenshot(os.path.join(ROOT, "build/test_boss.png"))
+    c.screenshot(os.path.join(ROOT, "build/test_boss%d.png" % (c.peek(s["level"]) + 1)))
     late0, f0 = word(c, s["late_frames"]), word(c, s["frames"])
     hp0 = c.peek(boss + EN_HP)
     c.joystick(JOY_FIRE)
     junk, n = 0, 0
-    while c.peek(boss + EN_STATE) == 0 and n < 3000:
+    while c.peek(boss + EN_STATE) == 0 and n < 6000:
         c.poke(s["invuln"], 50)
         c.run_frames(1)
         n += 1
@@ -197,41 +202,46 @@ def boss_flow(c, s):
                 junk += 1
                 break
         if n == 300:
-            c.screenshot(os.path.join(ROOT, "build/test_boss_fight.png"))
+            c.screenshot(os.path.join(ROOT, "build/test_fight%d.png" % (c.peek(s["level"]) + 1)))
     c.joystick(0)
     fr = word(c, s["frames"]) - f0
     late = word(c, s["late_frames"]) - late0
-    print("boss: αντοχή %d -> %d σε %.1f s, hardware στον αέρα %d καρέ, late %d/%d, σκάφος %d,%d"
-          % (hp0, c.peek(boss + EN_HP), n / 50, junk, late, fr,
+    print("boss %d: αντοχή %d -> %d σε %.1f s, hardware στον αέρα %d καρέ, late %d/%d, σκάφος %d,%d"
+          % (c.peek(s["level"]) + 1, hp0, c.peek(boss + EN_HP), n / 50, junk, late, fr,
              c.peek(s["ship_x"]), word(c, s["ship_y"])))
-    good = n < 3000 and junk > 0
+    good = n < 6000 and junk > 0
     c.run_frames(30)
     c.screenshot(os.path.join(ROOT, "build/test_boss_boom.png"))
     c.run_frames(350)               # εκρήξεις, χρόνος για τα μυρμήγκια
     c.screenshot(os.path.join(ROOT, "build/test_complete.png"))
     good = good and word(c, s["score"]) >= 5000
-    print("boss: σκορ %d %s" % (word(c, s["score"]), "OK" if good else "ΛΑΘΟΣ"))
+    print("   σκορ %d %s" % (word(c, s["score"]), "OK" if good else "ΛΑΘΟΣ"))
     return good
 
 
-def level_complete_flow(c, s):
-    """Μετά τον boss: Level Complete -> πίστα 2 -> (Γη) πίστα 5."""
+def next_level(c, s, n):
+    """Level Complete -> οθόνη της πίστας n -> παιχνίδι, και έλεγχος χάρτη."""
     fire(c)
     c.run_frames(20)
-    c.screenshot(os.path.join(ROOT, "build/test_level2.png"))
+    c.screenshot(os.path.join(ROOT, "build/test_level%d.png" % n))
     fire(c)
     c.run_frames(30)
-    good = check_level(c, s, 2)
-    c.poke(s["level"], 3)           # μετά την 4η: η 5η, στη Γη
-    c.poke(s["level_done"], 1)
-    c.run_frames(30)
-    fire(c)
-    c.run_frames(20)
-    fire(c)
-    c.run_frames(30)
-    good = check_level(c, s, 5) and good
+    return check_level(c, s, n)
+
+
+def space_flow(c, s):
+    """Οι 4 bosses του διαστήματος στη σειρά, ως την πίστα 5 (χωρίς boss)."""
+    good = boss_flow(c, s)
+    for n in (2, 3, 4):
+        good = next_level(c, s, n) and boss_flow(c, s) and good
+    good = next_level(c, s, 5) and good
     c.screenshot(os.path.join(ROOT, "build/test_level5_game.png"))
-    return good
+    # πίστα χωρίς boss: το τέλος της λίστας φέρνει κατευθείαν Level Complete
+    clear_enemies(c, s)
+    c.run_frames(60)
+    no_boss = c.peek(s["boss_on"]) == 0
+    print("πίστα 5 χωρίς boss: %s" % ("OK" if no_boss else "ΛΑΘΟΣ"))
+    return next_level(c, s, 6) and no_boss and good
 
 
 def game_over_flow(c, s):
@@ -296,7 +306,7 @@ def main():
             ok = False
     late = word(c, s["late_frames"])
     print("σύνολο: %d καρέ, %d άργησαν" % (word(c, s["frames"]), late))
-    ok = ok_level and boss_flow(c, s) and level_complete_flow(c, s) and ok
+    ok = ok_level and space_flow(c, s) and ok
     ok = game_over_flow(c, s) and ok
     sys.exit(0 if ok else 1)
 

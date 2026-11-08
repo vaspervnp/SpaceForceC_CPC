@@ -11,7 +11,8 @@ Arcade multi-directional scrolling shooter για τον **Amstrad CPC 6128** σ
 M6 (τα όπλα), το M7 (οι εχθροί και τα όπλα τους), το M8 (power-ups),
 το M9 (HUD, τίτλος, redefine keys, high scores), το M10 (μουσική και
 ηχητικά εφέ στο AY), το M11 (8 πίστες, συμπιεσμένες στο bank 7, με οθόνες
-μετάβασης) και το M12 (η πίστα 1 ολόκληρη, με τον boss Lord Garbage-Can).
+μετάβασης), το M12 (η πίστα 1 ολόκληρη, με τον boss Lord Garbage-Can) και το
+M13 (οι πίστες 2-4 με τους bosses τους).
 Το demo οδηγεί το σκάφος, με αδράνεια και φλόγα εξάτμισης, σε χάρτη 4x2
 οθονών με hardware scroll, στα 25 FPS με double buffering, με HUD σε split
 screen και 10 εχθρούς με δική τους συμπεριφορά: σχηματισμοί, κύκλοι,

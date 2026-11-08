@@ -33,7 +33,6 @@ import cpcimg
 import enemies as EN
 import font as FO
 import fx
-import junk
 import gfx
 import pickups as PU
 import preview
@@ -273,15 +272,11 @@ def build():
     groups.append(g)
 
     # ------------------------------------------------------------- boss
+    # (μόνο για τα νούμερα και την προεπισκόπηση: στο παιχνίδι οι bosses
+    # μπαίνουν συμπιεσμένοι από το levels.py)
     g = Group('boss1', 'Lord Garbage-Can (Level 1)', boss1.NOTE)
     for k, (nm, _) in enumerate(boss1.FRAMES):
         g.add('boss1_%s' % nm, 'καπάκι %s' % nm, boss1.frame(k))
-    groups.append(g)
-
-    g = Group('junk', 'το hardware που πετάει ο Lord Garbage-Can',
-              'Ίδιο μέγεθος με τα βλήματα. Ζει στο bank 5 μαζί με τον boss.')
-    for k, (nm, what, _) in enumerate(junk.JUNK):
-        g.add('junk_%s' % nm, what, junk.frame(k))
     groups.append(g)
 
     # ----------------------------------------------------- γραμματοσειρά

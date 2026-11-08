@@ -14,7 +14,7 @@ GUN_NONE        equ 0
 GUN_E9          equ 1
 GUN_SPAGHETTI   equ 2
 GUN_TORPEDO     equ 3
-GUN_JUNK        equ 4           ; το hardware του Lord Garbage-Can: κοστίζει ζωή
+GUN_JUNK        equ 4           ; ό,τι πετάει ο boss: κοστίζει ζωή
 
 ESHOT_N         equ 5
 ESHOT_SLOT      equ SHOT_SLOT+SHOT_N    ; 19-23
@@ -247,7 +247,7 @@ update_enemy_shots:
 .frame: ld a,(ix+ES_KIND)
         cp GUN_JUNK
         jr nz,.nojunk
-        ld a,(ix+ES_DIR)        ; δισκέτα, κασέτα ή οθόνη, από το bank 5
+        ld a,(ix+ES_DIR)        ; ένα από τα τρία του boss, από το bank 5
         and 3
         cp 3
         jr c,$+3
@@ -259,8 +259,8 @@ update_enemy_shots:
         add hl,hl
         add hl,hl
         add hl,hl
-        add hl,hl               ; *64 = JUNK_SZ
-        ld de,junk_gfx
+        add hl,hl               ; *64
+        ld de,BOSS_SHOTS
         add hl,de
         ld (iy+SPR_GFX),l
         ld (iy+SPR_GFX+1),h

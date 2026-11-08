@@ -1,9 +1,9 @@
 ; level.asm — οι πίστες: φόρτωμα από το bank 7 και αποσυμπίεση στο bank 4
 ;
 ; Όλες οι πίστες (assets/src/levels.py) είναι συμπιεσμένες στο bank 7
-; (LEVELS.BIN, το φορτώνει το DISC.BAS). Ανά πίστα δύο κομμάτια: ο χάρτης,
-; που ανοίγει στο bg_map, και το header (κόσμος, μουσική, κείμενα, λίστα
-; εχθρών), που ανοίγει στο LEVEL_HDR. Το bank 7 και το bank 4 βγαίνουν στο
+; (LEVELS.BIN, το φορτώνει το DISC.BAS). Ανά πίστα τρία κομμάτια: ο χάρτης,
+; που ανοίγει στο bg_map, το header (κόσμος, μουσική, κείμενα, λίστα εχθρών),
+; που ανοίγει στο LEVEL_HDR, και ο boss, στο BOSS_GFX του bank 5. Το bank 7 και το bank 4 βγαίνουν στο
 ; ίδιο παράθυρο (#4000), οπότε τα συμπιεσμένα περνούν πρώτα στη σελίδα
 ; #8000 της οθόνης, που στη μετάβαση δεν φαίνεται και μετά ξαναζωγραφίζεται.
 
@@ -11,7 +11,7 @@ LEVEL_HDR       equ #7C00       ; bank 4, ως το #7FFF
 LV_WORLD        equ 0           ; 0 = διάστημα, 8 = Γη (ship_world)
 LV_MUSIC        equ 1
 LV_COUNT        equ 2           ; πόσοι εχθροί στη λίστα
-LV_BOSS         equ 3           ; 0 = χωρίς boss (boss.asm)
+LV_BOSS         equ 3           ; 0 = χωρίς boss (οι παράμετροι: boss.asm)
 LV_TEXT         equ 4           ; όνομα, 2 γραμμές χιούμορ, με 0 στο τέλος
 STAGE           equ #8000       ; προσωρινά τα συμπιεσμένα
 STAGE_SIZE      equ 2048        ; >= το μεγαλύτερο κομμάτι (levels.py)
@@ -21,14 +21,21 @@ GA_RAM_C7       equ #C7
 level_load:
         ld a,(level)
         add a,a
+        ld e,a
         add a,a
+        add a,e                 ; *6
         ld e,a
         ld d,0
         ld hl,level_table
         add hl,de               ; (στο bank 7)
         ld de,bg_map
+        ld a,#C4
         call .part
         ld de,LEVEL_HDR
+        ld a,#C4
+        call .part
+        ld de,BOSS_GFX
+        ld a,#C5
         call .part
         ld a,(LEVEL_HDR+LV_WORLD)
         ld (ship_world),a
@@ -39,9 +46,10 @@ level_load:
         ld a,(LEVEL_HDR+LV_MUSIC)
         jp play_music
 
-; Ένα κομμάτι: HL -> dw στο level_table (bank 7), DE = πού ανοίγει (bank 4).
-; out: HL -> το επόμενο dw
-.part:  push de
+; Ένα κομμάτι: HL -> dw στο level_table (bank 7), DE = πού ανοίγει, A = σε
+; ποια ρύθμιση μνήμης. out: HL -> το επόμενο dw
+.part:  ld (.cfg+1),a
+        push de
         ld bc,#7F00+GA_RAM_C7
         out (c),c
         ld e,(hl)
@@ -53,12 +61,15 @@ level_load:
         ld de,STAGE
         ld bc,STAGE_SIZE
         ldir
-        RAM_WORLD
+.cfg:   ld a,0
+        ld b,#7F
+        out (c),a
         pop hl
         pop de
         push hl
         ld hl,STAGE
         call lz_unpack
+        RAM_WORLD
         pop hl
         ret
 

@@ -6,6 +6,7 @@
 
     χάρτης   64x48 πλακίδια (3072 bytes)  -> bank 4, #4000 (bg_map)
     header   κόσμος, μουσική, boss, κείμενα, λίστα εχθρών  -> bank 4, #7C00
+    boss     2 καρέ και 3 βλήματα (2496 bytes)  -> bank 5, #6000 (BOSS_GFX)
 
 Όλες οι πίστες φορτώνονται μαζί από τη δισκέτα στο bank 7 (LEVELS.BIN) και
 η αρχή μιας πίστας τις ξεσυμπιέζει από εκεί (src/level.asm). Με 8 πίστες
@@ -32,7 +33,9 @@ seed: η ίδια πίστα βγαίνει πάντα ίδια. Η προεπι
 import os
 import random
 
+import bosses
 import gfx
+import preview as preview_mod
 import tiles as TI
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -44,12 +47,29 @@ TILE_W, TILE_H = 8, 8           # pixels (4 bytes x 8 γραμμές)
 WORLD_W_BYTES = MAP_W * 4       # 256
 WORLD_H = MAP_H * 8             # 384
 HEADER_MAX = 1024               # #7C00-#7FFF
-LV_SPAWNS = 128                 # θέση της λίστας εχθρών στο header
+LV_PARAMS = 128                 # θέση των παραμέτρων του boss στο header
+LV_SPAWNS = 164                 # θέση της λίστας εχθρών
+STAGE_SIZE = 2048               # src/level.asm
+STATUS_LEN = 12                 # χαρακτήρες στη γραμμή μηνυμάτων του HUD
 SHIP_START = (128 - 3, 180)     # (x σε bytes, y), όπως στο main.asm
 SAFE_RADIUS = (40, 80)          # κανένας εχθρός τόσο κοντά στην αφετηρία
 
 T = {key: i for i, (key, *_) in enumerate(TI.TILES)}
-BOSS_LORD = 1
+# Η συμπεριφορά κάθε boss: hp ως 240 (ένα κελί στη μπάρα = 16), cool/fan =
+# καρέ ανάμεσα στις βολές και βλήματα ανά βολή (1, 3 ή 5), το ίδιο κάτω από
+# τη μισή αντοχή, dive = μάσκα του μετρητή βολών για την κάθοδο (1 = κάθε
+# 2η, 3 = κάθε 4η, 255 = ποτέ), vy = γραμμές/καρέ (2 ή 4), xmask = κίνηση x
+# όταν (καρέ & xmask) == 0, και τα δύο μηνύματα.
+BOSS_PARAMS = {
+    1: dict(hp=120, cool=75, fan=3, rcool=50, rfan=5, dive=3, vy=2, xmask=1,
+            hello='TRASH DAY!', bye='RECYCLED!'),
+    2: dict(hp=140, cool=60, fan=1, rcool=45, rfan=3, dive=1, vy=4, xmask=1,
+            hello='REJECTED!', bye='APPROVED!'),
+    3: dict(hp=170, cool=55, fan=5, rcool=40, rfan=5, dive=255, vy=2, xmask=1,
+            hello='DISK ERROR!', bye='REFORMATTED'),
+    4: dict(hp=200, cool=50, fan=3, rcool=35, rfan=5, dive=3, vy=4, xmask=0,
+            hello='ATTENTION!', bye='AT EASE.'),
+}
 ENEMY = {'grunt': 0, 'mine': 2, 'sock': 4, 'saucer': 6, 'suitcase': 8, 'roach': 10}
 EN_SIZE_PX = {'grunt': (8, 16), 'mine': (8, 16), 'sock': (8, 16),
               'saucer': (12, 16), 'suitcase': (12, 16), 'roach': (12, 16)}
@@ -62,19 +82,19 @@ MUS = {'space': 2, 'earth': 3}
 LEVELS = [
     dict(name='THE ASTEROID BELT OF LOST LUGGAGE',
          quip=('SOMEWHERE OUT HERE IS EVERY SOCK', 'YOU EVER LOST. AVOID THEM.'),
-         world='space', bg='stars', stamps=['dust'] * 8, boss=BOSS_LORD,
+         world='space', bg='stars', stamps=['dust'] * 8, boss=1,
          mix=[('sock', 10), ('suitcase', 8), ('grunt', 6), ('mine', 2), ('roach', 1)]),
     dict(name='THE NEBULA OF BUREAUCRACY',
          quip=('PLEASE TAKE A NUMBER.', 'YOUR NUMBER IS 8,000,442.'),
-         world='space', bg='nebula', stamps=['station'] * 10,
+         world='space', bg='nebula', stamps=['station'] * 10, boss=2, line=6,
          mix=[('grunt', 12), ('saucer', 6), ('mine', 4), ('sock', 4), ('roach', 2)]),
     dict(name='TRASHCAN CITY OF THE GALAXY',
          quip=('IT SMELLS LIKE A CPC 464 THAT', 'WAS LEFT IN THE RAIN SINCE 1986.'),
-         world='space', bg='stars', stamps=['trash'] * 10 + ['pipes'] * 4 + ['station'] * 4,
+         world='space', bg='stars', stamps=['trash'] * 10 + ['pipes'] * 4 + ['station'] * 4, boss=3,
          mix=[('grunt', 12), ('saucer', 6), ('suitcase', 6), ('mine', 5), ('roach', 3)]),
     dict(name='THE LUNAR ANT-HILL',
          quip=('THE ANTS ARE HERE. SO ARE THE', 'KATSAROPHOBIANS. AWKWARD.'),
-         world='space', bg='stars', stamps=['moon', 'tunnels'],
+         world='space', bg='stars', stamps=['moon', 'tunnels'], boss=4,
          mix=[('grunt', 15), ('saucer', 6), ('mine', 6), ('roach', 4), ('sock', 4)]),
     dict(name='TRAFFIC ON ATTIKI ODOS',
          quip=('EVEN IN 2442 THE TOLL', 'IS STILL 2.80 EUROS.'),
@@ -182,29 +202,37 @@ def make_map(lv, rnd):
 # --------------------------------------------------------------------------
 # Εχθροί: θέση στον κόσμο (x σε bytes, y σε γραμμές), ταχύτητα, είδος
 
+def free_spot(rnd):
+    """Μια θέση μακριά από την αφετηρία του σκάφους."""
+    while True:
+        x = rnd.randrange(8, WORLD_W_BYTES - 16)
+        y = rnd.randrange(16, WORLD_H - 40)
+        if abs(x - SHIP_START[0]) > SAFE_RADIUS[0] or abs(y - SHIP_START[1]) > SAFE_RADIUS[1]:
+            return x, y
+
+
 def spawns(lv, rnd):
-    out = []
-    order = []
+    """Οι εχθροί, σε τυχαία σειρά. Τα grunts μπαίνουν ως ομάδες (σχηματισμοί,
+    lv['line'] στη σειρά), ώστε να βγαίνουν ο ένας δίπλα στον άλλο."""
+    groups = []
     for kind, n in lv['mix']:
-        order += [kind] * n
-    rnd.shuffle(order)
-    grunts = 0
-    for kind in order:
-        while True:
-            x = rnd.randrange(8, WORLD_W_BYTES - 16)
-            y = rnd.randrange(16, WORLD_H - 40)
-            if abs(x - SHIP_START[0]) > SAFE_RADIUS[0] or abs(y - SHIP_START[1]) > SAFE_RADIUS[1]:
-                break
-        if kind == 'grunt':     # σχηματισμός: τρεις στη σειρά, ίδια κατεύθυνση
-            grunts += 1
-            if grunts % 3 != 1 and out and out[-1][4] == ENEMY['grunt']:
-                px, py, vx, vy, _ = out[-1]
-                x, y = min(WORLD_W_BYTES - 16, px + 20), py
+        size = lv.get('line', 3) if kind == 'grunt' else 1
+        for k in range(0, n, size):
+            groups.append((kind, min(size, n - k)))
+    rnd.shuffle(groups)
+    out = []
+    for kind, size in groups:
+        x, y = free_spot(rnd)
+        if size > 1:
+            x = min(x, WORLD_W_BYTES - 16 - (size - 1) * 12)
             vx = rnd.choice([1, -1])
-            vy = 0
-        elif kind == 'sock':
+            out += [(x + k * 12, y, vx, 0, ENEMY[kind]) for k in range(size)]
+            continue
+        if kind == 'sock':
             vx, vy = rnd.choice([1, -1]), rnd.choice([2, -2, 1])
         elif kind == 'suitcase':
+            vx, vy = rnd.choice([1, -1]), 0
+        elif kind == 'grunt':
             vx, vy = rnd.choice([1, -1]), 0
         else:
             vx, vy = 0, 0
@@ -220,12 +248,29 @@ def header(lv, sp):
         assert len(t) <= 40, t
         texts += list(t.encode()) + [0]
     h = [world, MUS[lv['world']], len(sp), lv.get('boss', 0)] + texts
-    assert len(h) <= LV_SPAWNS, lv['name']
+    assert len(h) <= LV_PARAMS, lv['name']
+    h += [0] * (LV_PARAMS - len(h))
+    b = BOSS_PARAMS.get(lv.get('boss'))
+    if b:
+        assert b['hp'] <= 240 and b['vy'] in (2, 4)
+        h += [b['hp'], b['hp'] // 2, b['cool'], b['fan'], b['rcool'], b['rfan'],
+              b['dive'], b['vy'], b['xmask']]
+        for t in (b['hello'], b['bye']):
+            assert len(t) <= STATUS_LEN and set(t) <= FONT_CHARS, t
+            h += list(t.ljust(STATUS_LEN).encode()) + [0]
     h += [0] * (LV_SPAWNS - len(h))
     for x, y, vx, vy, kind in sp:
         h += [x, 0, y & 255, y >> 8, vx & 255, vy & 255, kind]
     assert len(h) <= HEADER_MAX
     return h
+
+
+def boss_blob(n):
+    _, frames, shots = bosses.BOSSES[n]
+    blob = []
+    for img in frames + shots:
+        blob += list(gfx.encode_masked(img))
+    return blob
 
 
 # --------------------------------------------------------------------------
@@ -310,8 +355,9 @@ def preview(path, m, sp, title):
 def main():
     os.makedirs(PREVIEW, exist_ok=True)
     lines = ['; levels.asm — ΠΑΡΑΓΕΤΑΙ ΑΥΤΟΜΑΤΑ από assets/src/levels.py.',
-             '; Οι 8 πίστες συμπιεσμένες (bank 7): ανά πίστα dw χάρτης, dw header.',
+             '; Οι 8 πίστες συμπιεσμένες (bank 7): ανά πίστα dw χάρτης, header, boss.',
              '', 'LEVEL_COUNT     equ %d' % len(LEVELS), 'LV_SPAWNS       equ %d' % LV_SPAWNS,
+             'LV_PARAMS       equ %d' % LV_PARAMS,
              '', 'level_table:']
     blobs = []
     total = 0
@@ -324,7 +370,10 @@ def main():
         ch = compress(header(lv, sp))
         blobs.append((n, cm, ch))
         total += len(cm) + len(ch)
-        lines.append('        dw lv%d_map,lv%d_hdr     ; %s' % (n, n, lv['name']))
+        assert len(cm) <= STAGE_SIZE and len(ch) <= STAGE_SIZE
+        bn = lv.get('boss')
+        lines.append('        dw lv%d_map,lv%d_hdr,%s     ; %s'
+                     % (n, n, 'boss%d_gfx' % bn if bn else 'no_boss', lv['name']))
         preview(os.path.join(PREVIEW, 'level%d.png' % n), m, sp, 'LEVEL %d  %s' % (n, lv['name']))
         print('level %d: χάρτης %d -> %d, header -> %d, %d εχθροί'
               % (n, len(flat), len(cm), len(ch), len(sp)))
@@ -335,9 +384,27 @@ def main():
         lines.append('lv%d_hdr:' % n)
         lines += ['        db ' + ','.join('#%02X' % b for b in ch[i:i + 16])
                   for i in range(0, len(ch), 16)]
+    lines += ['no_boss:', '        db 0']
+    for bn in sorted(bosses.BOSSES):
+        cb = compress(boss_blob(bn))
+        assert len(cb) <= STAGE_SIZE, bn
+        total += len(cb)
+        print('boss %d: %d -> %d  %s' % (bn, 2496, len(cb), bosses.BOSSES[bn][0]))
+        lines.append('boss%d_gfx:' % bn)
+        lines += ['        db ' + ','.join('#%02X' % b for b in cb[i:i + 16])
+                  for i in range(0, len(cb), 16)]
     with open(os.path.join(DATA, 'levels.asm'), 'w') as f:
         f.write('\n'.join(lines) + '\n')
     print('σύνολο %d bytes' % total)
+    sheet = []
+    shots = []
+    for nm, frames, sh in bosses.BOSSES.values():
+        sheet += [(nm[:15], frames[0]), ('επίθεση', frames[1])]
+        shots += [(nm[:6], x) for x in sh]
+    preview_mod.contact_sheet(os.path.join(HERE, '..', 'preview', 'bosses.png'), sheet,
+                              zoom=5, cols=4, title='bosses', grid=False)
+    preview_mod.contact_sheet(os.path.join(HERE, '..', 'preview', 'boss_shots.png'), shots,
+                              zoom=6, cols=6, title='τι πετάνε', grid=False)
 
 
 if __name__ == '__main__':

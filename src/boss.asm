@@ -1,32 +1,47 @@
-; boss.asm — ο boss της πίστας: Lord Garbage-Can
+; boss.asm — ο boss της πίστας
 ;
 ; Βγαίνει όταν τελειώσει η λίστα εχθρών της πίστας (LV_BOSS στο header), στο
 ; slot του τελευταίου εχθρού. Μένει ένα slot του actors.asm με EN_KIND =
-; KIND_BOSS, οπότε βλήματα και επαφή περνούν από τον ίδιο κώδικα.
+; KIND_BOSS, οπότε βλήματα και επαφή περνούν από τον ίδιο κώδικα. Τα γραφικά
+; του (BOSS_GFX) και οι παράμετροι (BP_*, στο header) έρχονται με την πίστα:
+; ο κώδικας είναι ένας, κάθε boss ένα σετ αριθμών (assets/src/levels.py).
 ;
 ; Από εκεί η κάμερα κλειδώνει και το σκάφος μένει μέσα στην οθόνη (arena).
-; Ο boss αιωρείται στην κορυφή, ακολουθώντας το σκάφος οριζόντια. Το καπάκι
-; ανοίγει BOSS_WARN καρέ πριν από κάθε βολή, ώστε να προλαβαίνεις να φύγεις,
-; και πετάει τρία κομμάτια hardware σε βεντάλια· κάτω από τη μισή αντοχή
-; πέντε, και πιο συχνά. Κάθε 4η βολή κατεβαίνει και όλη την οθόνη (η επαφή
-; κοστίζει ζωή). Όταν σκάσει: εκρήξεις για 3 s, 3 s για τα μυρμήγκια, και
-; μετά το spawn_enemy τελειώνει την πίστα.
+; Ο boss αιωρείται στην κορυφή, ακολουθώντας το σκάφος οριζόντια. BOSS_WARN
+; καρέ πριν από κάθε βολή δείχνει το καρέ της επίθεσης, ώστε να προλαβαίνεις
+; να φύγεις, και πετάει βεντάλια 1, 3 ή 5 βλημάτων. Κάτω από τη μισή αντοχή
+; αλλάζει ρυθμό και βεντάλια. Ανάλογα με το BP_DIVE κατεβαίνει και όλη την
+; οθόνη (η επαφή κοστίζει ζωή). Όταν σκάσει: εκρήξεις για 3 s, 3 s για τα
+; μυρμήγκια, και μετά το spawn_enemy τελειώνει την πίστα.
 ;
-; EN_TIMER: 1 = καπάκι ανοιχτό, EN_COOL: καρέ ως τη βολή, EN_VX: μετρητής
+; EN_TIMER: 1 = καρέ επίθεσης, EN_COOL: καρέ ως τη βολή, EN_VX: μετρητής
 ; βολών, EN_VY: 1 = κατεβαίνει.
 
 KIND_BOSS       equ 12          ; kind_info[6]
-BOSS_HP         equ 120
-BOSS_COOL       equ 75
-BOSS_RAGE_COOL  equ 50
+BOSS_W          equ 12          ; bytes δεδομένων (assets/src/bosses.py: 24x48)
+BOSS_H          equ 48
+BOSS_SZ         equ 1152        ; bytes ανά καρέ, με μάσκα
+BOSS_GFX        equ #6000       ; bank 5: 2 καρέ, μετά 3 βλήματα 8x8
+BOSS_SHOTS      equ BOSS_GFX+2*BOSS_SZ
 BOSS_WARN       equ 25
 BOSS_TOP        equ 8           ; γραμμές από την κορυφή της οθόνης
-BOSS_BOTTOM     equ VIEW_H*8-BOSS1_H-8  ; ως εκεί στην κάθοδο
-BOSS_VY         equ 2
+BOSS_BOTTOM     equ VIEW_H*8-BOSS_H-8   ; ως εκεί στην κάθοδο
 BOSS_BOOM_TIME  equ 75
 BOSS_SCORE      equ 5000
 BAR_LABEL_X     equ 36          ; στο HUD, γραμμή 24
 BAR_X           equ 46
+
+; Οι παράμετροι, στο header της πίστας (bank 4)
+BP_HP           equ LEVEL_HDR+LV_PARAMS
+BP_RAGE_AT      equ BP_HP+1     ; κάτω από εδώ: οι δεύτεροι ρυθμός και βεντάλια
+BP_COOL         equ BP_HP+2
+BP_FAN          equ BP_HP+3
+BP_RAGE_COOL    equ BP_HP+4
+BP_RAGE_FAN     equ BP_HP+5
+BP_DIVE         equ BP_HP+6
+BP_VY           equ BP_HP+7
+BP_XMASK        equ BP_HP+8
+BP_HELLO        equ BP_HP+9     ; 2 x 13 bytes
 
 ; Ο boss στο slot IX/IY. Από το spawn_enemy, όταν τελειώσουν οι εχθροί.
 boss_start:
@@ -36,8 +51,10 @@ boss_start:
         ld (enemies_left),a
         ld (ix+EN_KIND),KIND_BOSS
         ld (ix+EN_STATE),ST_ALIVE
-        ld (ix+EN_HP),BOSS_HP
-        ld (ix+EN_COOL),BOSS_COOL
+        ld a,(BP_HP)
+        ld (ix+EN_HP),a
+        ld a,(BP_COOL)
+        ld (ix+EN_COOL),a
         ld (ix+EN_TIMER),0
         ld (ix+EN_PHASE),0
         ld (ix+EN_VX),0
@@ -51,7 +68,7 @@ boss_start:
         add hl,hl
         add hl,hl
         add hl,hl
-        ld de,BOSS1_H
+        ld de,BOSS_H
         or a
         sbc hl,de
         jr nc,.y
@@ -68,7 +85,11 @@ boss_start:
         ld (iy+SPR_FLAGS),1
         ld a,mus_boss
         call play_music
-        ld hl,txt_trash
+        ld hl,BP_HELLO
+        ld de,boss_hello
+        ld bc,2*13
+        ldir
+        ld hl,boss_hello
         call set_status
         call boss_place
         jp boss_frame
@@ -76,19 +97,20 @@ boss_start:
 ; A = το x που θέλει: στο κέντρο του σκάφους, μέσα στον κόσμο
 boss_target_x:
         ld a,(ship_x)
-        sub (BOSS1_W-SHIP_W)/2
+        sub (BOSS_W-SHIP_W)/2
         jr nc,$+3
         xor a
-        cp WORLD_W-BOSS1_W+1
+        cp WORLD_W-BOSS_W+1
         ret c
-        ld a,WORLD_W-BOSS1_W
+        ld a,WORLD_W-BOSS_W
         ret
 
 ; Κάθε καρέ, ζωντανός.
 boss_update:
-        ld a,(frames)           ; x: 1 byte ανά 2 καρέ
-        rrca
-        jr c,.y
+        ld a,(frames)           ; x: 1 byte όταν (καρέ & BP_XMASK) == 0
+        ld hl,BP_XMASK
+        and (hl)
+        jr nz,.y
         call boss_target_x
         cp (ix+EN_X)
         jr z,.y
@@ -118,7 +140,9 @@ boss_update:
         jr nz,.move
         ld (ix+EN_VY),0         ; έφτασε: πίσω στην κορυφή
         jr .gun
-.move:  ld bc,BOSS_VY
+.move:  ld a,(BP_VY)
+        ld c,a
+        ld b,0
         jr nc,.down
         or a
         sbc hl,bc
@@ -135,10 +159,19 @@ boss_update:
         ld (ix+EN_TIMER),1      ; το καπάκι: προειδοποίηση
         jp boss_frame
 .fire:  ld (ix+EN_TIMER),0
-        ld (ix+EN_COOL),BOSS_COOL
+        ld hl,BP_COOL           ; ρυθμός και βεντάλια
+        ld a,(BP_RAGE_AT)
+        cp (ix+EN_HP)
+        jr c,.calm
+        ld hl,BP_RAGE_COOL
+.calm:  ld a,(hl)
+        ld (ix+EN_COOL),a
+        inc hl
+        ld a,(hl)
+        ld (boss_fan),a
         inc (ix+EN_VX)
-        ld a,(ix+EN_VX)
-        and 3
+        ld a,(BP_DIVE)
+        and (ix+EN_VX)
         jr nz,.nodive
         ld (ix+EN_VY),1
 .nodive:
@@ -150,14 +183,16 @@ boss_update:
         call aim_dir
         ld (boss_dir),a
         call spawn_enemy_shot
+        ld a,(boss_fan)
+        cp 3
+        jp c,boss_frame
         ld a,1
         call .side
         ld a,-1
         call .side
-        ld a,(ix+EN_HP)
-        cp BOSS_HP/2
-        jp nc,boss_frame
-        ld (ix+EN_COOL),BOSS_RAGE_COOL
+        ld a,(boss_fan)
+        cp 5
+        jp c,boss_frame
         ld a,2
         call .side
         ld a,-2
@@ -255,15 +290,15 @@ boss_place:
 
 ; Το γραφικό: καπάκι κλειστό ή ανοιχτό (bank 5).
 boss_frame:
-        ld hl,boss1_gfx+boss1_closed*BOSS1_SZ
+        ld hl,BOSS_GFX
         ld a,(ix+EN_TIMER)
         or a
         jr z,.set
-        ld hl,boss1_gfx+boss1_open*BOSS1_SZ
+        ld hl,BOSS_GFX+BOSS_SZ
 .set:   ld (iy+SPR_GFX),l
         ld (iy+SPR_GFX+1),h
-        ld (iy+SPR_W),BOSS1_W
-        ld (iy+SPR_H),BOSS1_H
+        ld (iy+SPR_W),BOSS_W
+        ld (iy+SPR_H),BOSS_H
         ld (iy+SPR_BANK),BANK_ENEMIES
         ret
 
@@ -276,7 +311,7 @@ boss_explode:
         ld (score),hl
         ld a,1
         ld (hud_dirty),a
-        ld hl,txt_binned
+        ld hl,boss_bye
         call set_status
         ld a,#FF
         jp play_music
@@ -323,11 +358,12 @@ draw_boss_bar:
         ld de,EN_HP
         add hl,de
         ld a,(hl)
-        add a,7                 ; ένα κελί = 8 αντοχής
+        add a,15                ; ένα κελί = 16 αντοχής (ως 240)
         rrca
         rrca
         rrca
-        and 31
+        rrca
+        and 15
         ld hl,boss_cells
         cp (hl)
         ret z
@@ -347,5 +383,3 @@ draw_boss_bar:
         jp print_char
 
 txt_boss:   db "BOSS",0
-txt_trash:  db "TRASH DAY!  ",0
-txt_binned: db "RECYCLED!   ",0

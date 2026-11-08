@@ -531,6 +531,7 @@ enemies_left: db 0              ; slots που δεν έχουν τελειώσ�
 boss_on:     db 0               ; boss.asm: 0 = όχι ακόμα, 1 = μόλις, 2 = HUD έτοιμο
 boss_cells:  db 0
 boss_dir:    db 0
+boss_fan:    db 0
 boss_ptr:    dw 0
 frames:      dw 0
 late_frames: dw 0
@@ -591,7 +592,9 @@ eshots      equ shots+SHOT_N*SH_SIZE    ; ESHOT_N x ES_SIZE
 recs0       equ eshots+ESHOT_N*ES_SIZE  ; εγγραφές sprites, σελίδα #80
 recs1       equ recs0+SPR_MAX*REC_SIZE  ; σελίδα #C0
 game_backup equ recs1+SPR_MAX*REC_SIZE  ; GAME_VARS_SIZE
-ram_end     equ game_backup+GAME_VARS_SIZE
+boss_hello  equ game_backup+GAME_VARS_SIZE      ; τα μηνύματα του boss, 2 x 13:
+boss_bye    equ boss_hello+13                   ; το HUD γράφεται σε C0, όπου
+ram_end     equ boss_bye+13                     ; το header δεν φαίνεται
 
 ; Τα bytes κάτω από τα sprites, στη χαμηλή μνήμη (κάτω από τη στοίβα)
 save0       equ #0040                   ; σελίδα #80 (μετά τα vectors)
@@ -644,11 +647,10 @@ gfx4_end:
 gfx5_data:
         include "../assets/data/enemies.asm"
         include "../assets/data/pickups.asm"    ; μυρμήγκια (και τα power-ups του M8)
-        include "../assets/data/boss1.asm"
-        include "../assets/data/junk.asm"
 gfx5_end:
 
-        assert gfx5_end <= #8000, "bank 5 is full"
+        assert gfx5_end <= BOSS_GFX, "bank 5: GFX5 overlaps the boss"
+        assert BOSS_GFX+2*BOSS_SZ+3*64 <= #8000, "bank 5 is full"
         ifndef SNAPSHOT
         save "GFX5.BIN",gfx5_data,gfx5_end-gfx5_data,DSK,"build/SpaceForceC.dsk"
         endif
