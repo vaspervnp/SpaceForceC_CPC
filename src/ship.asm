@@ -13,6 +13,7 @@ SHIP_ACC        equ 2
 FRICTION_SPACE  equ 1
 FRICTION_EARTH  equ 3
 
+BANK_WORLD      equ #C4
 SMOKE_N         equ 3           ; slots 10-12
 SMOKE_SLOT      equ ENEMY_N
 FLAME_SLOT      equ SPR_MAX-2   ; πριν από το σκάφος: χώνεται από κάτω του
@@ -170,6 +171,7 @@ update_ship_sprites:
         ; --- το σκάφος
         ld iy,spr_table+SHIP_SLOT*SPR_SIZE
         ld (iy+SPR_FLAGS),1
+        ld (iy+SPR_BANK),BANK_WORLD
         ld (iy+SPR_W),SHIP_W
         ld (iy+SPR_H),SHIP_H
         ld a,(ship_x)
@@ -305,8 +307,9 @@ update_ship_sprites:
         djnz .puff
         ret
 
-; Γράφει στο sprite IY το καρέ A του fx_table (γραφικό, πλάτος, ύψος).
+; Γράφει στο sprite IY το καρέ A του fx_table (γραφικό, πλάτος, ύψος, bank).
 fx_frame:
+        ld (iy+SPR_BANK),BANK_WORLD
         ld l,a
         ld h,0
         add hl,hl

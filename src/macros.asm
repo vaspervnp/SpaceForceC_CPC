@@ -20,11 +20,17 @@ HW_YELLOW       equ #4A
 HW_MAGENTA      equ #58
 HW_WHITE        equ #4B
 
-; Ο κόσμος (χάρτης, πλακίδια, sprites) είναι στο bank 4· το HUD στη φυσική
+; Ο κόσμος (χάρτης, πλακίδια, σκάφος, βλήματα, fx) είναι στο bank 4, οι
+; εχθροί της πίστας στο bank 5· το HUD στη φυσική
 ; σελίδα #4000. Ο interrupt handler δεν αγγίζει το #4000, άρα η αλλαγή
 ; είναι ένα OUT χωρίς DI.
         macro RAM_WORLD
         ld bc,#7F00+#C4
+        out (c),c
+        mend
+
+        macro RAM_ENEMIES               ; bank 5: εχθροί της πίστας
+        ld bc,#7F00+#C5
         out (c),c
         mend
 

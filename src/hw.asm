@@ -276,6 +276,7 @@ IN_RIGHT        equ 8
 IN_FIRE         equ 16
 IN_WEAPON       equ 32
 IN_PAUSE        equ 64
+IN_WORLD        equ 128         ; (δοκιμή) διάστημα <-> Γη
 
 ; Διαβάζει πληκτρολόγιο + joystick και τα μεταφράζει σε ενέργειες μέσω
 ; του key_bindings. out: (input) = κρατημένα, (input_new) = όσα πατήθηκαν
@@ -325,9 +326,10 @@ key_bindings:
         db 8,%00100000,IN_DOWN
         db 4,%00000100,IN_LEFT
         db 3,%00001000,IN_RIGHT
-        ; W: όπλο, ESC: παύση
+        ; W: όπλο, ESC: παύση, E: διάστημα/Γη (δοκιμή)
         db 7,%00001000,IN_WEAPON
         db 8,%00000100,IN_PAUSE
+        db 7,%00000100,IN_WORLD
         ; joystick 0: και τα δύο κουμπιά = fire (τα joysticks με ένα κουμπί
         ; δεν δίνουν όλα το ίδιο bit· το όπλο αλλάζει με το W)
         db 9,%00000001,IN_UP

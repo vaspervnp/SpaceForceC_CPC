@@ -43,7 +43,7 @@ all: $(DSK)
 $(DSK): $(SRC) $(ASSET_DATA) $(FLAGS_STAMP) Makefile
 	rm -f $@
 	$(RASM) $(RASMFLAGS) src/main.asm -o $(BUILD)/sfc -s -sq -os $(BUILD)/sfc.sym
-	printf '10 MEMORY &3FFF:OUT &7F00,&C4:LOAD"GFX4.BIN":OUT &7F00,&C0:RUN"SFC.BIN"\r\n' > $(LOADER)
+	printf '10 MEMORY &3FFF:OUT &7F00,&C4:LOAD"GFX4.BIN":OUT &7F00,&C5:LOAD"GFX5.BIN":OUT &7F00,&C0:RUN"SFC.BIN"\r\n' > $(LOADER)
 	$(IDSK) $@ -i $(LOADER) -t 0 > /dev/null 2>&1
 	@head -c 21 $@ | grep -q 'EXTENDED CPC DSK File' || { echo "$@: δεν είναι Extended DSK"; exit 1; }
 	@$(IDSK) $@ -l 2>/dev/null | grep -E '^[A-Z0-9 ]{8}\.'

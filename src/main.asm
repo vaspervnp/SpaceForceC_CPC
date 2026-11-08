@@ -1,4 +1,4 @@
-; main.asm — Space Force C, M5: το σκάφος
+; main.asm — Space Force C, M6: τα όπλα
 ;
 ; Το σκάφος κινείται με κέρσορες / QAOP / joystick σε χάρτη 64x48
 ; πλακιδίων (4 οθόνες επί 2) και η κάμερα το ακολουθεί με hardware scroll
@@ -6,8 +6,9 @@
 ; σε split screen (hw.asm, screen.asm). 10 εχθροί κινούνται στον κόσμο
 ; (actors.asm) ως sprites με clip και save-under (sprites.asm). Το σκάφος
 ; έχει αδράνεια, φλόγα, καπνό στη Γη και πιλότους που ουρλιάζουν στις
-; απότομες στροφές (ship.asm). Fire (Space / joystick) αλλάζει κόσμο
-; (space <-> earth), ESC = παύση.
+; απότομες στροφές (ship.asm). Fire (Space / joystick) ρίχνει με το τρέχον
+; όπλο, W = επόμενο όπλο, U = αναβάθμιση μπαγκέτας (weapons.asm),
+; E = διάστημα <-> Γη, ESC = παύση.
 ; Με make PROFILE=1 το border δείχνει τον χρόνο κάθε φάσης (hw.asm).
 ;
 ; Memory map (RAM config C0 σε όλο το παιχνίδι, εκτός από τις προσβάσεις
@@ -18,7 +19,8 @@
 ;   #4000-#7FFF  παράθυρο banks. Δύο ρυθμίσεις μνήμης:
 ;                C4 (RAM_WORLD, σχεδόν πάντα): το bank 4 = ο κόσμος
 ;                  #4000 χάρτης (3K), #4C00 μισά πλακίδια (512),
-;                  #4E00- GFX4.BIN: πλακίδια, σκάφος (και ό,τι μπει)
+;                  #4E00- GFX4.BIN: πλακίδια, σκάφος, fx, βλήματα
+;                C5 (RAM_ENEMIES, ανά sprite): GFX5.BIN, οι εχθροί
 ;                C0 (RAM_HUD, μόνο όσο γράφεται το HUD): η φυσική
 ;                  σελίδα, με το HUD στα #x6C0-#x7FF κάθε block των 2K
 ;                Το DISC.BAS φορτώνει το GFX4.BIN κατευθείαν στο bank 4.
@@ -105,13 +107,14 @@ main_loop:
         jr main_loop
 .run:
         ld a,(input_new)
-        and IN_FIRE
-        jr z,.nofire
+        and IN_WORLD
+        jr z,.noworld
         ld a,(ship_world)
         xor SHIP_WORLD_EARTH
         ld (ship_world),a
-.nofire:
+.noworld:
         call move_ship
+        call update_weapons
         call update_camera
         call update_actors
         call update_ship_sprites
@@ -145,6 +148,13 @@ main_loop:
         call update_scream
         RAM_WORLD
 .noscream:
+        ld a,(hud_dirty)
+        or a
+        jr z,.noscore
+        RAM_HUD
+        call draw_hud_game
+        RAM_WORLD
+.noscore:
         ld a,(frames)
         and 15
         jr nz,.nohud
@@ -183,10 +193,11 @@ init_page:
         jp draw_view
 
 draw_hud_static:
-        ld hl,txt_title
+        ld hl,txt_score
         ld b,8
         ld c,0
         call print_str
+        call draw_hud_game
         ld hl,txt_frames
         ld b,16
         ld c,0
@@ -206,7 +217,17 @@ draw_hud:
         ld c,50
         jp print_u16
 
-txt_title:  db "SPACE FORCE C - M5 THE FLYING PATATES",0
+; Σκορ και όπλο: μόνο όταν αλλάξουν (hud_dirty).
+draw_hud_game:
+        xor a
+        ld (hud_dirty),a
+        ld hl,(score)
+        ld b,8
+        ld c,12
+        call print_u16
+        jp draw_weapon
+
+txt_score:  db "SCORE",0
 txt_frames: db "FRAMES",0
 txt_late:   db "LATE",0
 
@@ -301,6 +322,7 @@ dir_table:
         include "sprites.asm"
         include "actors.asm"
         include "ship.asm"
+        include "weapons.asm"
         include "text.asm"
 
 ; Γραφικά (assets/data, παράγονται από assets/src/make_assets.py)
@@ -324,6 +346,15 @@ smoke_next:  db 0
 smoke_age:   ds SMOKE_N
 scream:      db 0
 scream_text: db 0
+score:       dw 0
+hud_dirty:   db 0
+weapon:      db WP_DISCO
+baguette_level: db 1
+fire_cool:   db 0
+upgrade_key: db 0
+shot_kind:   db 0
+hit_x:       db 0
+hit_y:       dw 0
 ship_dir:    db ship_space_n
 ship_world:  db 0
 cam_x:       db CAM_START_X
@@ -372,13 +403,23 @@ row40       equ code_end                ; MAP_H x dw
 keymap      equ row40+2*MAP_H           ; 10 bytes
 spr_table   equ keymap+10               ; SPR_MAX x SPR_SIZE
 enemies     equ spr_table+SPR_MAX*SPR_SIZE      ; ENEMY_N x EN_SIZE
-recs0       equ enemies+ENEMY_N*EN_SIZE ; εγγραφές sprites, σελίδα #80
+shots       equ enemies+ENEMY_N*EN_SIZE ; SHOT_N x SH_SIZE
+recs0       equ shots+SHOT_N*SH_SIZE    ; εγγραφές sprites, σελίδα #80
 recs1       equ recs0+SPR_MAX*REC_SIZE  ; σελίδα #C0
 save0       equ recs1+SPR_MAX*REC_SIZE  ; bytes κάτω από τα sprites, #80
 save1       equ save0+SAVE_SIZE         ; #C0
 ram_end     equ save1+SAVE_SIZE
 
         assert ram_end <= #4000, "code + data overflow into the bank window"
+
+; Το rasm γράφει κάθε αρχείο κατευθείαν σε Extended DSK, με AMSDOS header,
+; ΑΜΕΣΩΣ μετά το κομμάτι του: το save διαβάζει από το τρέχον bank του rasm.
+; Το SFC.BIN: load = exec = #1000 (από το RUN). Η διαδρομή είναι ως προς τη
+; ρίζα του repo, απ' όπου τρέχει το Makefile. Με -DSNAPSHOT=1 βγαίνει αντί
+; γι' αυτό snapshot (.sna) που ξεκινάει κατευθείαν στο start.
+        ifndef SNAPSHOT
+        save "SFC.BIN",#1000,code_end-#1000,DSK,"build/SpaceForceC.dsk"
+        endif
 
 ;------------------------------------------------------------------
 ; Bank 4 (RAM_WORLD, στο #4000-#7FFF)
@@ -388,28 +429,36 @@ bg_map      equ #4000                   ; MAP_W*MAP_H, στοιχισμένο σ
 halftiles   equ #4C00                   ; 512, στοιχισμένο σε 256
 GFX4_START  equ #4E00
 
-        ifdef SNAPSHOT
         bank 4                  ; το rasm ξεκινάει το bank από το πρώτο org του
         org #4000
         ds GFX4_START-#4000
-        endif
         org GFX4_START
 gfx4_data:
         include "../assets/data/tiles.asm"
         include "../assets/data/ship.asm"
-        include "../assets/data/enemies.asm"
         include "../assets/data/fx.asm"
+        include "../assets/data/shots.asm"
 gfx4_end:
 
         assert bg_map+MAP_W*MAP_H <= halftiles, "map overlaps halftiles"
         assert halftiles+512 <= GFX4_START, "halftiles overlap GFX4"
         assert gfx4_end <= #8000, "bank 4 is full"
-
-; Το rasm γράφει το αρχείο κατευθείαν σε Extended DSK, με AMSDOS header
-; (load = exec = #1000 από το RUN). Η διαδρομή είναι ως προς τη ρίζα του
-; repo, απ' όπου τρέχει το Makefile. Με -DSNAPSHOT=1 βγαίνει αντί γι'
-; αυτό snapshot (.sna) που ξεκινάει κατευθείαν στο start.
         ifndef SNAPSHOT
-        save "SFC.BIN",#1000,code_end-#1000,DSK,"build/SpaceForceC.dsk"
         save "GFX4.BIN",gfx4_data,gfx4_end-gfx4_data,DSK,"build/SpaceForceC.dsk"
         endif
+
+;------------------------------------------------------------------
+; Bank 5 (RAM_ENEMIES): οι εχθροί της πίστας
+;------------------------------------------------------------------
+
+        bank 5
+        org #4000
+gfx5_data:
+        include "../assets/data/enemies.asm"
+gfx5_end:
+
+        assert gfx5_end <= #8000, "bank 5 is full"
+        ifndef SNAPSHOT
+        save "GFX5.BIN",gfx5_data,gfx5_end-gfx5_data,DSK,"build/SpaceForceC.dsk"
+        endif
+

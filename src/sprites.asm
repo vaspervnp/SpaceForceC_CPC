@@ -1,7 +1,7 @@
 ; sprites.asm — sprite engine: λίστα, clip στην κάμερα, save-under
 ;
 ; Κάθε sprite έχει συντεταγμένες κόσμου και γραφικό με μάσκα (mask,data)
-; στο bank 4. Σε κάθε καρέ, για τη σελίδα που ζωγραφίζουμε (IX):
+; σε ένα από τα banks (SPR_BANK: η ρύθμιση μνήμης που το βάζει στο #4000). Σε κάθε καρέ, για τη σελίδα που ζωγραφίζουμε (IX):
 ;
 ;   sprites_restore   πριν από το scroll: γράφει πίσω, με την ανάποδη σειρά,
 ;                     τα bytes που είχαν σωθεί κάτω από τα sprites της
@@ -16,14 +16,15 @@
 ; Κόστος: blit + save 17 µs/byte, επαναφορά 6 µs/byte (LDIR), συν ~30 µs
 ; ανά γραμμή και ~100 µs ανά σειρά χαρακτήρων.
 
-SPR_MAX         equ 16
+SPR_MAX         equ 24
 SPR_FLAGS       equ 0           ; 0 = ελεύθερο
 SPR_X           equ 1           ; world X (bytes)
 SPR_Y           equ 2           ; world Y (γραμμές, 16-bit)
-SPR_GFX         equ 4           ; γραφικό (mask,data), στο bank 4
+SPR_GFX         equ 4           ; γραφικό (mask,data), στο #4000-#7FFF
 SPR_W           equ 6           ; bytes δεδομένων ανά γραμμή
 SPR_H           equ 7           ; γραμμές
-SPR_SIZE        equ 8
+SPR_BANK        equ 8           ; ρύθμιση μνήμης: #C4 = bank 4, #C5 = bank 5
+SPR_SIZE        equ 9
 
 REC_SIZE        equ 7           ; x, y(2), w, h, σωσμένα(2)
 SAVE_SIZE       equ 2048        ; bytes ανά σελίδα
@@ -112,11 +113,15 @@ sprites_draw:
         inc hl
         ld (rec_ptr),hl
         inc (ix+BUF_NREC)
+        ld b,#7F                ; το bank του γραφικού στο #4000
+        ld a,(iy+SPR_BANK)
+        out (c),a
         call spr_put
 .next:  ld de,SPR_SIZE
         add iy,de
         pop bc
         djnz .spr
+        RAM_WORLD
         ret
 
 ; Κόβει το sprite IY στην κάμερα της σελίδας IX.
