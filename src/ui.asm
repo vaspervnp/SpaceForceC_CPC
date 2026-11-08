@@ -9,6 +9,7 @@ TITLE_PAGE         equ #C0
 HI_N            equ 5
 HI_SIZE         equ 5           ; 3 γράμματα + dw σκορ
 HI_TIME         equ 250         ; 10 s στον πίνακα, μετά πίσω στον τίτλο
+LEVEL_WAIT      equ 100         ; 4 s στις οθόνες των πιστών
 NAME_REPEAT     equ 8           ; καρέ πριν αρχίσει η επανάληψη στο όνομα
 
 ; Γραμμές της κάθε σειράς (8 γραμμές ανά σειρά χαρακτήρων)
@@ -546,6 +547,95 @@ name_entry:
         jp .draw
 
 ;------------------------------------------------------------------
+; Πίστες: μετάβαση, Level Complete
+;------------------------------------------------------------------
+
+; Η οθόνη πριν από την πίστα: αριθμός, όνομα, δύο γραμμές χιούμορ από το
+; header της (bank 4, ήδη φορτωμένο). Ως το fire ή για LEVEL_WAIT καρέ.
+level_intro:
+        call ui_page
+        ld a,(level)
+        add a,'1'
+        ld (txt_level+6),a
+        ld hl,txt_level
+        ld b,3*8
+        ld c,33
+        call print_big
+        ld hl,LEVEL_HDR+LV_TEXT
+        ld b,7*8
+        call .line
+        ld b,10*8
+        call .line
+        ld b,11*8
+        call .line
+        ld hl,txt_ready
+        ld b,16*8
+        call print_center
+        call hud_title
+        jr ui_wait
+.line:  push hl                 ; κεντραρισμένο, και HL μετά το 0 του
+        call print_center
+        pop hl
+.skip:  ld a,(hl)
+        inc hl
+        or a
+        jr nz,.skip
+        ret
+
+; Ως το fire ή για LEVEL_WAIT καρέ.
+ui_wait:
+        call wait_release
+        ld b,LEVEL_WAIT
+.wait:  push bc
+        call wait_frame
+        call read_input
+        pop bc
+        ld a,(input_new)
+        and IN_FIRE
+        ret nz
+        djnz .wait
+        ret
+
+; Από το main_loop όταν τελειώσουν οι εχθροί της πίστας (ως το M12, που
+; τελειώνει με τον boss).
+level_end:
+        ld sp,STACK_TOP
+        ld a,#FF
+        call play_music
+        call ui_page
+        ld hl,txt_complete
+        ld b,3*8
+        ld c,25
+        call print_big
+        ld hl,txt_score
+        ld b,8*8
+        ld c,26
+        call print_str
+        ld hl,(score)
+        ld b,8*8
+        ld c,44
+        call print_u16
+        ld hl,txt_antsaved
+        ld b,10*8
+        ld c,26
+        call print_str
+        ld hl,(ants_saved)
+        ld b,10*8
+        ld c,44
+        call print_u16
+        ld hl,txt_thanks
+        ld b,14*8
+        call print_center
+        call hud_title
+        call ui_wait
+        ld hl,level
+        inc (hl)
+        ld a,(hl)
+        cp LEVEL_COUNT
+        jp c,level_start
+        jp game_end             ; και οι 8: το τέλος έρχεται με το M15
+
+;------------------------------------------------------------------
 ; Κοινά
 ;------------------------------------------------------------------
 
@@ -598,6 +688,11 @@ txt_ask:       db "?  ",0
 txt_best:      db "BEST",0
 txt_credit:    db "WING C - AMSTRAD CPC - 2442",0
 txt_marks:     db "  -  ",0
+txt_level:     db "LEVEL 1",0
+txt_ready:     db "GET READY!",0
+txt_complete:  db "LEVEL COMPLETE!",0
+txt_antsaved:  db "ANTS",0
+txt_thanks:    db "THE ANTS SAY THANK YOU.",0
 
 title_lines:
         TROW 4

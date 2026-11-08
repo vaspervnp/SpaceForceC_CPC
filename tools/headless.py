@@ -23,7 +23,10 @@ import sys
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.environ.get("CPCHEADLESS", os.path.expanduser("~/cpcemu")))
 import ctypes  # noqa: E402
+import random  # noqa: E402
 import cpc as cpcmod  # noqa: E402
+sys.path.insert(0, os.path.join(ROOT, "assets", "src"))
+import levels  # noqa: E402
 from cpc import CPC, JOY_UP, JOY_DOWN, JOY_LEFT, JOY_RIGHT, JOY_FIRE  # noqa: E402
 
 cpcmod._lib.cpcemu_ram_ptr.restype = ctypes.POINTER(ctypes.c_uint8)
@@ -139,6 +142,44 @@ def fire(c, frames=10):
     c.run_frames(frames)
 
 
+def check_level(c, s, n):
+    """Ο χάρτης στο bank 4 και ο κόσμος == ό,τι έβγαλε το levels.py."""
+    lv = levels.LEVELS[n - 1]
+    rnd = random.Random(442 * n)
+    want = bytes(t for row in levels.make_map(lv, rnd) for t in row)
+    got = bank_read(c, 4, 0x4000, len(want))
+    world = c.peek(s["ship_world"])
+    good = got == want and c.peek(s["level"]) == n - 1 \
+        and world == (0 if lv["world"] == "space" else 8)
+    print("πίστα %d: χάρτης %s, κόσμος %d, εχθροί στη λίστα %d  %s"
+          % (n, "ίδιος" if got == want else "ΔΙΑΦΟΡΕΤΙΚΟΣ", world,
+             c.peek(s["spawn_left"]), "OK" if good else "ΛΑΘΟΣ"))
+    return good
+
+
+def level_complete_flow(c, s):
+    """Τέλος πίστας -> Level Complete -> πίστα 2 -> (Γη) πίστα 5."""
+    c.poke(s["level_done"], 1)
+    c.run_frames(30)
+    c.screenshot(os.path.join(ROOT, "build/test_complete.png"))
+    fire(c)
+    c.run_frames(20)
+    c.screenshot(os.path.join(ROOT, "build/test_level2.png"))
+    fire(c)
+    c.run_frames(30)
+    good = check_level(c, s, 2)
+    c.poke(s["level"], 3)           # μετά την 4η: η 5η, στη Γη
+    c.poke(s["level_done"], 1)
+    c.run_frames(30)
+    fire(c)
+    c.run_frames(20)
+    fire(c)
+    c.run_frames(30)
+    good = check_level(c, s, 5) and good
+    c.screenshot(os.path.join(ROOT, "build/test_level5_game.png"))
+    return good
+
+
 def game_over_flow(c, s):
     """Game over με ρεκόρ: όνομα (UP x2 = C), πίνακας, πίσω στον τίτλο."""
     c.poke(s["score"], 6000 & 255)
@@ -176,10 +217,11 @@ def main():
     wait_title(c, s)
     c.set_joystick_type(1)
     c.screenshot(os.path.join(ROOT, "build/test_title.png"))
-    c.joystick(JOY_FIRE)        # title -> παιχνίδι
-    c.run_frames(10)
-    c.joystick(0)
-    c.run_frames(50)
+    fire(c)                     # title -> οθόνη της πίστας
+    c.screenshot(os.path.join(ROOT, "build/test_level1.png"))
+    fire(c)                     # -> παιχνίδι
+    c.run_frames(30)
+    ok_level = check_level(c, s, 1)
     ok = True
     for name, mask, frames in SCENARIOS:
         f0, l0 = word(c, s["frames"]), word(c, s["late_frames"])
@@ -200,6 +242,7 @@ def main():
             ok = False
     late = word(c, s["late_frames"])
     print("σύνολο: %d καρέ, %d άργησαν" % (word(c, s["frames"]), late))
+    ok = ok_level and level_complete_flow(c, s) and ok
     ok = game_over_flow(c, s) and ok
     sys.exit(0 if ok else 1)
 

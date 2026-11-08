@@ -22,6 +22,7 @@
 ;                  #4000 χάρτης (3K), #4C00 μισά πλακίδια (512),
 ;                  #4E00- GFX4.BIN: πλακίδια, σκάφος, fx, βλήματα
 ;                C5 (RAM_ENEMIES, ανά sprite): GFX5.BIN, εχθροί, pickups
+;                C7 (μόνο στο level_load): bank 7, οι πίστες (LEVELS.BIN)
 ;                C6 (μόνο στο sound_frame): bank 6, ο ήχος (SND6.BIN)
 ;                C0 (RAM_HUD, μόνο όσο γράφεται το HUD): η φυσική
 ;                  σελίδα, με το HUD στα #x6C0-#x7FF κάθε block των 2K
@@ -77,11 +78,22 @@ title:
         call title_screen       ; ui.asm: επιστρέφει όταν πατηθεί fire
 
 game_start:
+        ld hl,game_backup       ; νέο παιχνίδι: όλα από την αρχή
+        ld de,game_vars
+        ld bc,GAME_VARS_SIZE
+        ldir
+        xor a
+        ld (level),a
+level_start:
+        ld sp,STACK_TOP
         call game_init
 main_loop:
         ld a,(game_done)
         or a
         jp nz,game_end
+        ld a,(level_done)
+        or a
+        jp nz,level_end         ; ui.asm
         call sound_frame        ; μία φορά ανά καρέ, μετά το flip
         PROFILE_BORDER HW_BRIGHT_GREEN  ; είσοδος + λογική
         call read_input
@@ -173,24 +185,53 @@ main_loop:
 
 ;------------------------------------------------------------------
 
-; Νέο παιχνίδι: οι μεταβλητές από το game_backup, καθαρά sprites/βλήματα,
-; νέος χάρτης, HUD, και οι δύο σελίδες ζωγραφισμένες.
+; Αρχή πίστας: οι μεταβλητές από το game_backup (εκτός από όσα κρατάει ο
+; παίκτης από πίστα σε πίστα), καθαρά sprites/βλήματα, η πίστα από το bank
+; 7, η οθόνη της μετάβασης, HUD, και οι δύο σελίδες ζωγραφισμένες.
 game_init:
+        ld hl,(score)
+        push hl
+        ld hl,(ants_saved)
+        push hl
+        ld a,(lives)
+        ld h,a
+        ld a,(weapon)
+        ld l,a
+        push hl
+        ld a,(baguette_level)
+        ld h,a
+        ld a,(engine)
+        ld l,a
+        push hl
         ld hl,game_backup
         ld de,game_vars
         ld bc,GAME_VARS_SIZE
         ldir
+        pop hl
+        ld a,l
+        ld (engine),a
+        ld a,h
+        ld (baguette_level),a
+        pop hl
+        ld a,l
+        ld (weapon),a
+        ld a,h
+        ld (lives),a
+        pop hl
+        ld (ants_saved),hl
+        pop hl
+        ld (score),hl
         ld hl,spr_table         ; sprites, εχθροί, βλήματα: όλα ελεύθερα
         ld de,spr_table+1
         ld bc,recs0-spr_table-1
         ld (hl),0
         ldir
         RAM_WORLD
-        call make_map
+        call level_load
+        call level_intro        ; ui.asm
         call init_actors
         call update_actors
         call update_ship_sprites
-        call world_music
         call text_to_hud
         RAM_HUD
         call clear_hud
@@ -412,6 +453,7 @@ dir_table:
         include "items.asm"
         include "text.asm"
         include "ui.asm"
+        include "level.asm"
 
 ; Γραφικά (assets/data, παράγονται από assets/src/make_assets.py)
         include "../assets/data/palette.asm"
@@ -471,6 +513,10 @@ cam_x:       db CAM_START_X
 cam_y:       db CAM_START_Y
 paused:      db 0
 game_done:   db 0
+level_done:  db 0
+spawn_left:  db 0               ; εχθροί της λίστας της πίστας που μένουν
+spawn_ptr:   dw 0
+enemies_left: db 0              ; slots που δεν έχουν τελειώσει (ST_GONE)
 frames:      dw 0
 late_frames: dw 0
 game_vars_end:
@@ -485,6 +531,7 @@ vbl_count:   db 0
 int_idx:     db #80
 game_r12:    db #20
 game_r13:    db 0
+level:       db 0               ; 0-7
 snd_ticks:   db 0               ; ήχος (hw.asm, sound.asm)
 sfx_req:     db 0
 music_req:   db 0
@@ -513,10 +560,6 @@ rows_ptr:    dw 0
 put_rows:    db 0
 back_rows:   db 0
 row_slow:    db 0
-rect_x:      db 0               ; fill_map_rect
-rect_y:      db 0
-rect_w:      db 0
-rect_h:      db 0
 
 code_end:
 
@@ -572,7 +615,7 @@ gfx4_end:
 
         assert bg_map+MAP_W*MAP_H <= halftiles, "map overlaps halftiles"
         assert halftiles+512 <= GFX4_START, "halftiles overlap GFX4"
-        assert gfx4_end <= #8000, "bank 4 is full"
+        assert gfx4_end <= LEVEL_HDR, "bank 4: GFX4 overlaps the level header"
         ifndef SNAPSHOT
         save "GFX4.BIN",gfx4_data,gfx4_end-gfx4_data,DSK,"build/SpaceForceC.dsk"
         endif
@@ -591,6 +634,21 @@ gfx5_end:
         assert gfx5_end <= #8000, "bank 5 is full"
         ifndef SNAPSHOT
         save "GFX5.BIN",gfx5_data,gfx5_end-gfx5_data,DSK,"build/SpaceForceC.dsk"
+        endif
+
+;------------------------------------------------------------------
+; Bank 7 (C7): όλες οι πίστες, συμπιεσμένες (level.asm)
+;------------------------------------------------------------------
+
+        bank 7
+        org #4000
+lvl7_data:
+        include "../assets/data/levels.asm"
+lvl7_end:
+
+        assert lvl7_end <= #8000, "bank 7 is full"
+        ifndef SNAPSHOT
+        save "LEVELS.BIN",lvl7_data,lvl7_end-lvl7_data,DSK,"build/SpaceForceC.dsk"
         endif
 
 ;------------------------------------------------------------------

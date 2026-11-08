@@ -2,8 +2,8 @@
 ;
 ; Κάθε τύπος (kind_info) ορίζει κίνηση, όπλο, αντοχή και πόσα μυρμήγκια
 ; αφήνει όταν σκάσει. Όταν τους χτυπήσει όπλο (weapons.asm) χάνουν αντοχή ή
-; χορεύουν (Disco-Ray), σκάνε, και μετά από 3 s ξαναβγαίνουν στη θέση που
-; ξεκίνησαν. Τα εχθρικά βλήματα και τα μυρμήγκια είναι στο hazards.asm.
+; χορεύουν (Disco-Ray), σκάνε, και μετά από 3 s το slot παίρνει τον επόμενο
+; της λίστας της πίστας (level.asm), έξω από την κάμερα. Τα εχθρικά βλήματα και τα μυρμήγκια είναι στο hazards.asm.
 ;
 ; Τα γραφικά τους είναι στο bank 5 (RAM_ENEMIES), οι εκρήξεις στο bank 4:
 ; το ίδιο slot αλλάζει bank όταν ο εχθρός σκάει.
@@ -28,6 +28,7 @@ ST_ALIVE        equ 0
 ST_DANCE        equ 1           ; Macarena: δεν κινείται, κουνιέται, μετά σκάει
 ST_BOOM         equ 2
 ST_DEAD         equ 3
+ST_GONE         equ 4           ; η λίστα της πίστας τελείωσε για αυτό το slot
 
 ; Κινήσεις
 AI_BOUNCE       equ 0           ; ευθεία, αναπηδά στα όρια του κόσμου
@@ -38,7 +39,9 @@ AI_CHASE        equ 4           ; κυνηγάει το σκάφος, στη μ�
 
 DANCE_TIME      equ 25          ; 1 s
 BOOM_TIME       equ 9           ; 3 καρέ έκρηξης x 3
-DEAD_TIME       equ 75          ; 3 s ως την επανεμφάνιση
+DEAD_TIME       equ 75          ; 3 s ως τον επόμενο της λίστας
+SPAWN_RETRY     equ 10          ; ο επόμενος θα έβγαινε μέσα στην κάμερα
+SPAWN_SIZE      equ 7           ; x, 0, y (dw), vx, vy, kind
 KILL_SCORE      equ 100
 BANK_ENEMIES    equ #C5
 
@@ -58,56 +61,70 @@ kind_info:
         db AI_BOUNCE,GUN_NONE,     3,1,0    ; βαλίτσα: αργή, αντέχει
         db AI_CHASE, GUN_TORPEDO,  3,2,60   ; κατσαρίδα-διοικητής
 
-        macro ENEMY x,y,vx,vy,kind
-        db {x},0
-        dw {y}
-        db {vx},{vy},{kind}
-        mend
-
-enemy_init:
-        ENEMY  40, 40, 1, 0,en_grunt0
-        ENEMY  60, 40, 1, 0,en_grunt0
-        ENEMY  80, 40, 1, 0,en_grunt0
-        ENEMY 180,120, 0, 0,en_saucer0
-        ENEMY 220,330, 0, 0,en_roach0
-        ENEMY  90,250, 1, 2,en_sock0
-        ENEMY 200,220,-1, 0,en_suitcase0
-        ENEMY 150,100, 0, 0,en_mine0
-        ENEMY  70,180, 0, 0,en_mine0
-        ENEMY  40,320, 0, 0,en_saucer0
-
+; Οι πρώτοι ENEMY_N της λίστας της πίστας (level.asm), όπου κι αν είναι.
 init_actors:
+        ld a,ENEMY_N
+        ld (enemies_left),a
         ld ix,enemies
         ld iy,spr_table
         ld b,ENEMY_N
-        ld c,0
 .en:    push bc
-        ld a,c
-        call spawn_enemy
-        call update_actors.frame_anim
+        call spawn_now
+        ld a,(ix+EN_STATE)
+        or a                    ; ST_ALIVE
+        call z,update_actors.frame_anim
         ld de,EN_SIZE
         add ix,de
         ld de,SPR_SIZE
         add iy,de
         pop bc
-        inc c
         djnz .en
         ret
 
-; Ο εχθρός IX (slot IY) στη θέση εκκίνησής του, ζωντανός.
-; in: A = δείκτης στο enemy_init
+; Ο εχθρός IX (slot IY) από την επόμενη θέση της λίστας της πίστας (bank 4,
+; RAM_WORLD). Δεν βγαίνει μέσα στην κάμερα: τότε περιμένει λίγο. Όταν η
+; λίστα τελειώσει μένει ST_GONE, και με τον τελευταίο η πίστα τελειώνει.
 spawn_enemy:
-        ld l,a
-        ld h,0
-        ld e,l
-        ld d,h
-        add hl,hl
-        add hl,hl
-        add hl,hl
+        ld a,(spawn_left)
         or a
-        sbc hl,de               ; *7
-        ld de,enemy_init
+        jr z,.gone
+        ld hl,(spawn_ptr)       ; x, y: δοκιμή στο sprite (που είναι σβηστό)
+        ld a,(hl)
+        ld (iy+SPR_X),a
+        inc hl
+        inc hl
+        ld a,(hl)
+        ld (iy+SPR_Y),a
+        inc hl
+        ld a,(hl)
+        ld (iy+SPR_Y+1),a
+        call on_camera
+        jr c,spawn_now
+        ld (ix+EN_STATE),ST_DEAD
+        ld (ix+EN_TIMER),SPAWN_RETRY
+        ret
+.gone:  ld (ix+EN_STATE),ST_GONE
+        ld (iy+SPR_FLAGS),0
+        ld hl,enemies_left
+        dec (hl)
+        ret nz
+        ld a,1
+        ld (level_done),a
+        ret
+
+; Όπως το spawn_enemy, χωρίς τον έλεγχο της κάμερας (αρχή της πίστας).
+spawn_now:
+        ld hl,spawn_left
+        ld a,(hl)
+        or a
+        jr z,spawn_enemy.gone
+        dec (hl)
+        ld hl,(spawn_ptr)
+        push hl
+        ld de,SPAWN_SIZE
         add hl,de
+        ld (spawn_ptr),hl
+        pop hl
         ld a,(hl)
         ld (ix+EN_X),a
         ld (iy+SPR_X),a
@@ -170,6 +187,8 @@ update_actors:
         jp z,.boom
         cp ST_DEAD
         jp z,.dead
+        cp ST_GONE
+        jp z,.next
 
         ; --- ζωντανός
         call .frame_anim
@@ -271,12 +290,10 @@ update_actors:
 
 .dead:  dec (ix+EN_TIMER)
         jr nz,.next
-        pop bc
-        push bc
-        ld a,ENEMY_N
-        sub b                   ; δείκτης = ENEMY_N - B
         call spawn_enemy
-        call .frame_anim
+        ld a,(ix+EN_STATE)
+        or a                    ; ST_ALIVE
+        call z,.frame_anim
 
 .next:  ld de,EN_SIZE
         add ix,de

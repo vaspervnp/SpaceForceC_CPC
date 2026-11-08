@@ -9,8 +9,9 @@ Arcade multi-directional scrolling shooter για τον **Amstrad CPC 6128** σ
 Έχουν γίνει το M0 (build pipeline), το M2 (engine core), το M3
 (multi-directional scrolling), το M4 (sprite engine), το M5 (το σκάφος), το
 M6 (τα όπλα), το M7 (οι εχθροί και τα όπλα τους), το M8 (power-ups),
-το M9 (HUD, τίτλος, redefine keys, high scores) και το M10 (μουσική και
-ηχητικά εφέ στο AY).
+το M9 (HUD, τίτλος, redefine keys, high scores), το M10 (μουσική και
+ηχητικά εφέ στο AY) και το M11 (8 πίστες, συμπιεσμένες στο bank 7, με
+οθόνες μετάβασης).
 Το demo οδηγεί το σκάφος, με αδράνεια και φλόγα εξάτμισης, σε χάρτη 4x2
 οθονών με hardware scroll, στα 25 FPS με double buffering, με HUD σε split
 screen και 10 εχθρούς με δική τους συμπεριφορά: σχηματισμοί, κύκλοι,

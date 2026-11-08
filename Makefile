@@ -41,11 +41,11 @@ all: $(DSK)
 # Το rasm γράφει το SFC.BIN και το GFX4.BIN σε νέα EDSK· το iDSK προσθέτει
 # τον loader (που κρατάει το Extended format) και ελέγχουμε το header στο
 # τέλος. Ο loader φορτώνει το GFX4.BIN στο bank 4 (OUT &7F00,&C4), το
-# GFX5.BIN στο 5 και τον ήχο (SND6.BIN) στο 6.
+# GFX5.BIN στο 5, τον ήχο (SND6.BIN) στο 6 και τις πίστες (LEVELS.BIN) στο 7.
 $(DSK): $(SRC) $(ASSET_DATA) $(FLAGS_STAMP) Makefile
 	rm -f $@
 	$(RASM) $(RASMFLAGS) src/main.asm -o $(BUILD)/sfc -s -sq -os $(BUILD)/sfc.sym
-	printf '10 MEMORY &3FFF:OUT &7F00,&C4:LOAD"GFX4.BIN":OUT &7F00,&C5:LOAD"GFX5.BIN":OUT &7F00,&C6:LOAD"SND6.BIN":OUT &7F00,&C0:RUN"SFC.BIN"\r\n' > $(LOADER)
+	printf '10 MEMORY &3FFF:OUT &7F00,&C4:LOAD"GFX4.BIN":OUT &7F00,&C5:LOAD"GFX5.BIN":OUT &7F00,&C6:LOAD"SND6.BIN":OUT &7F00,&C7:LOAD"LEVELS.BIN":OUT &7F00,&C0:RUN"SFC.BIN"\r\n' > $(LOADER)
 	$(IDSK) $@ -i $(LOADER) -t 0 > /dev/null 2>&1
 	@head -c 21 $@ | grep -q 'EXTENDED CPC DSK File' || { echo "$@: δεν είναι Extended DSK"; exit 1; }
 	@$(IDSK) $@ -l 2>/dev/null | grep -E '^[A-Z0-9 ]{8}\.'
@@ -78,6 +78,7 @@ sound: $(DSK)
 assets: $(ASSET_PY)
 	$(PYTHON) assets/src/make_assets.py
 	$(PYTHON) assets/src/music.py
+	$(PYTHON) assets/src/levels.py
 
 $(FLAGS_STAMP): FORCE
 	@mkdir -p $(BUILD)
