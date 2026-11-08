@@ -22,20 +22,7 @@ print_str:
 
 ; in: A = χαρακτήρας ASCII, B = γραμμή, C = byte x
 print_char:
-        sub 32
-        ld e,a
-        ld d,0
-        ld hl,font_map
-        add hl,de
-        ld l,(hl)
-        ld h,0
-        add hl,hl               ; *32 = FONT_SZ
-        add hl,hl
-        add hl,hl
-        add hl,hl
-        add hl,hl
-        ld de,font_gfx+1        ; τα bytes δεδομένων (mask,data)
-        add hl,de
+        call font_glyph
         call scr_addr
         ld b,FONT_H
 .line:  ld a,(hl)
@@ -52,6 +39,73 @@ print_char:
         add a,8
         ld d,a
         djnz .line
+        ret
+
+; Γράμματα διπλού ύψους (4x16): κάθε γραμμή του γλύφου δύο φορές.
+; in: HL = κείμενο με 0 στο τέλος, B = γραμμή (πολλαπλάσιο του 8), C = byte x
+print_big:
+        ld a,(hl)
+        or a
+        ret z
+        inc hl
+        push hl
+        push bc
+        call font_glyph         ; HL = bytes δεδομένων του γλύφου
+        call .half              ; γραμμές 0-3 -> 8 γραμμές
+        pop bc
+        push bc
+        ld a,b
+        add a,8
+        ld b,a
+        call .half              ; γραμμές 4-7 -> 8 γραμμές
+        pop bc
+        pop hl
+        inc c
+        inc c
+        jr print_big
+.half:  push hl
+        call scr_addr
+        pop hl
+        ld b,4
+.line:  push bc
+        ld c,2                  ; κάθε γραμμή δύο φορές
+.twice: ld a,(hl)
+        ld (de),a
+        inc hl
+        inc hl
+        inc de
+        ld a,(hl)
+        ld (de),a
+        dec hl
+        dec hl
+        dec de
+        ld a,d
+        add a,8
+        ld d,a
+        dec c
+        jr nz,.twice
+        ld bc,4
+        add hl,bc
+        pop bc
+        djnz .line
+        ret
+
+; HL = τα bytes δεδομένων του γλύφου του χαρακτήρα A (mask,data -> +1)
+font_glyph:
+        sub 32
+        ld e,a
+        ld d,0
+        ld hl,font_map
+        add hl,de
+        ld l,(hl)
+        ld h,0
+        add hl,hl               ; *32 = FONT_SZ
+        add hl,hl
+        add hl,hl
+        add hl,hl
+        add hl,hl
+        ld de,font_gfx+1
+        add hl,de
         ret
 
 ; Τυπώνει αριθμό 0-65535 με 5 ψηφία.

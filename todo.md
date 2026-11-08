@@ -170,11 +170,16 @@
 - [ ] Ισορροπία (πιθανότητες, διάρκειες) με πραγματικές πίστες (M12)
 
 ## M9 — HUD & UI
-- [ ] HUD: score, ζωές, όπλο, power-ups, μετρητής μυρμηγκιών, boss health
-- [ ] Bitmap font Mode 0 (Aseprite)
-- [ ] Title screen, μενού (start, redefine keys, high scores)
-- [ ] Pause, Game Over, Level Complete
-- [ ] High score table (αποθήκευση στη δισκέτα — προαιρετικό)
+**Έγινε** (`src/ui.asm`, `src/screen.asm`, `src/text.asm`). Οι οθόνες εκτός παιχνιδιού δεν αγγίζουν το CRTC: το split screen μένει, πάνω η σελίδα #C0 χωρίς scroll (21 σειρές), κάτω το HUD. Οι μεταβλητές του παιχνιδιού (`game_vars`) ξαναπαίρνουν τις αρχικές τιμές από αντίγραφο σε κάθε νέο παιχνίδι. Τίτλος, ρεκόρ, όνομα, redefine και παύση ελέγχθηκαν στο headless (`make test` περνάει και από game over -> όνομα -> πίνακα).
+- [x] HUD: score, ζωές, όπλο, power-ups, μετρητής μυρμηγκιών (boss health με τα bosses, M11)
+- [x] Bitmap font 4x8 (`assets/src/font.py`)· διορθώθηκε το N· `print_big` για γράμματα διπλού ύψους
+- [x] Title screen: τίτλος, ιστορία, σκάφος + διοικητής, μενού 1 START / 2 REDEFINE KEYS / 3 HIGH SCORES, «PRESS FIRE»· στο HUD το καλύτερο σκορ
+- [x] Redefine keys: 7 ενέργειες (πάνω, κάτω, αριστερά, δεξιά, fire, όπλο, παύση), ονόματα και για τα 80 πλήκτρα· το joystick μένει πάντα ενεργό
+- [x] Pause («PAUSED» στο HUD), Game Over -> high score -> τίτλος
+- [ ] Level Complete: με το gameplay loop των πιστών (M12)
+- [x] High score table 5 θέσεων, όνομα 3 γραμμάτων με πάνω/κάτω + fire
+- [ ] Αποθήκευση των ρεκόρ στη δισκέτα (προαιρετικό)
+- Μνήμη: `ram_end` = #3CFF, μένουν ~770 bytes ως το #4000. Επόμενη λύση: η γραμματοσειρά ή τα κείμενα του UI σε bank
 
 ## M10 — Ήχος & μουσική (AY-3-8912)
 - [ ] Επιλογή player (π.χ. Arkos Tracker 2 / AKG ή AKY player, συμβατός με rasm)

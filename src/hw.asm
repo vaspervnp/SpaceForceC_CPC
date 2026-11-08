@@ -315,20 +315,15 @@ read_input:
 ; Αντιστοιχίσεις: γραμμή, bit mask, ενέργεια. Είναι στη RAM ώστε το μενού
 ; του M9 να τις ξαναγράφει. Πολλά πλήκτρα μπορούν να δίνουν την ίδια ενέργεια.
 key_bindings:
-        ; κέρσορες + Space
-        db 0,%00000001,IN_UP
+        ; Τα πρώτα KEYS_USER ορίζονται από τον παίκτη (ui.asm: redefine)
+        db 0,%00000001,IN_UP            ; κέρσορες
         db 0,%00000100,IN_DOWN
         db 1,%00000001,IN_LEFT
         db 0,%00000010,IN_RIGHT
-        db 5,%10000000,IN_FIRE
-        ; Q A O P
-        db 8,%00001000,IN_UP
-        db 8,%00100000,IN_DOWN
-        db 4,%00000100,IN_LEFT
-        db 3,%00001000,IN_RIGHT
-        ; W: όπλο, ESC: παύση, E: διάστημα/Γη (δοκιμή)
-        db 7,%00001000,IN_WEAPON
-        db 8,%00000100,IN_PAUSE
+        db 5,%10000000,IN_FIRE          ; Space
+        db 7,%00001000,IN_WEAPON        ; W
+        db 8,%00000100,IN_PAUSE         ; ESC
+        ; E: διάστημα/Γη (δοκιμή)
         db 7,%00000100,IN_WORLD
         ; joystick 0: και τα δύο κουμπιά = fire (τα joysticks με ένα κουμπί
         ; δεν δίνουν όλα το ίδιο bit· το όπλο αλλάζει με το W)
@@ -339,4 +334,4 @@ key_bindings:
         db 9,%00100000,IN_FIRE
         db 9,%00010000,IN_FIRE
         db #FF
-        ds 3*8                  ; χώρος για επιπλέον αντιστοιχίσεις
+KEYS_USER       equ 7

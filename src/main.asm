@@ -1,6 +1,6 @@
-; main.asm — Space Force C, M8: power-ups
+; main.asm — Space Force C, M9: HUD, title, high scores
 ;
-; Το σκάφος κινείται με κέρσορες / QAOP / joystick σε χάρτη 64x48
+; Το σκάφος κινείται με κέρσορες (ή όποια πλήκτρα ορίσει ο παίκτης) / joystick σε χάρτη 64x48
 ; πλακιδίων (4 οθόνες επί 2) και η κάμερα το ακολουθεί με hardware scroll
 ; (scroll.asm), σε double buffering, κλειδωμένο στα 25 FPS. Από κάτω, HUD
 ; σε split screen (hw.asm, screen.asm). 10 εχθροί κινούνται στον κόσμο
@@ -66,32 +66,21 @@ start:
         call set_palette
         call make_row40
         call make_halftiles
-        call make_map
-        call init_actors
-        call update_actors
-        call update_ship_sprites
+        ld hl,game_vars         ; οι αρχικές τιμές, για κάθε νέο παιχνίδι
+        ld de,game_backup
+        ld bc,GAME_VARS_SIZE
+        ldir
 
-        RAM_HUD
-        call clear_hud
-        call draw_hud_static
-        RAM_WORLD
+title:
+        ld sp,STACK_TOP
+        call title_screen       ; ui.asm: επιστρέφει όταν πατηθεί fire
 
-        ; και οι δύο σελίδες ξεκινούν με όλη την κάμερα ζωγραφισμένη
-        ld a,#C0
-        call init_page
-        ld a,#80
-        call init_page
-        ld a,(cam_x)
-        ld c,a
-        ld a,(cam_y)
-        ld b,a
-        call cell_ma
-        ld a,#C0                ; δείξε τη #C0, ζωγράφιζε στη #80
-        call show_page
-        xor a                   ; η αρχικοποίηση δεν μετράει ως καρέ
-        ld (vbl_count),a
-
+game_start:
+        call game_init
 main_loop:
+        ld a,(game_done)
+        or a
+        jp nz,game_end
         PROFILE_BORDER HW_BRIGHT_GREEN  ; είσοδος + λογική
         call read_input
         ld a,(input_new)
@@ -100,6 +89,9 @@ main_loop:
         ld a,(paused)
         xor 1
         ld (paused),a
+        RAM_HUD
+        call draw_paused
+        RAM_WORLD
 .nopause:
         ld a,(paused)
         or a
@@ -178,6 +170,44 @@ main_loop:
 
 ;------------------------------------------------------------------
 
+; Νέο παιχνίδι: οι μεταβλητές από το game_backup, καθαρά sprites/βλήματα,
+; νέος χάρτης, HUD, και οι δύο σελίδες ζωγραφισμένες.
+game_init:
+        ld hl,game_backup
+        ld de,game_vars
+        ld bc,GAME_VARS_SIZE
+        ldir
+        ld hl,spr_table         ; sprites, εχθροί, βλήματα: όλα ελεύθερα
+        ld de,spr_table+1
+        ld bc,recs0-spr_table-1
+        ld (hl),0
+        ldir
+        RAM_WORLD
+        call make_map
+        call init_actors
+        call update_actors
+        call update_ship_sprites
+        call text_to_hud
+        RAM_HUD
+        call clear_hud
+        call draw_hud_static
+        RAM_WORLD
+        ; και οι δύο σελίδες ξεκινούν με όλη την κάμερα ζωγραφισμένη
+        ld a,#C0
+        call init_page
+        ld a,#80
+        call init_page
+        ld a,(cam_x)
+        ld c,a
+        ld a,(cam_y)
+        ld b,a
+        call cell_ma
+        ld a,#C0                ; δείξε τη #C0, ζωγράφιζε στη #80
+        call show_page
+        xor a                   ; η αρχικοποίηση δεν μετράει ως καρέ
+        ld (vbl_count),a
+        ret
+
 ; in: A = σελίδα
 init_page:
         ld (draw_page),a
@@ -246,6 +276,28 @@ draw_hud_game:
         call draw_powerups
         jp draw_weapon
 
+; «PAUSED» στη θέση των μηνυμάτων, ή πίσω ό,τι έδειχναν.
+draw_paused:
+        ld hl,txt_clear
+        ld b,STATUS_Y
+        ld c,STATUS_X
+        call print_str
+        ld a,(paused)
+        or a
+        jr z,.resume
+        ld hl,txt_paused
+        ld b,STATUS_Y
+        ld c,STATUS_X
+        jp print_str
+.resume:
+        ld a,(status_timer)     ; το μήνυμα που έτρεχε, ξανά
+        or a
+        ret z
+        ld a,1
+        ld (status_new),a
+        ret
+
+txt_paused: db "PAUSED",0
 txt_score:  db "SCORE",0
 txt_lives:  db "LIVES",0
 txt_ants:   db "ANTS",0
@@ -346,6 +398,7 @@ dir_table:
         include "hazards.asm"
         include "items.asm"
         include "text.asm"
+        include "ui.asm"
 
 ; Γραφικά (assets/data, παράγονται από assets/src/make_assets.py)
         include "../assets/data/palette.asm"
@@ -355,6 +408,9 @@ dir_table:
 ; Μεταβλητές με αρχική τιμή
 ;------------------------------------------------------------------
 
+; Ό,τι ξεκινάει από την αρχή σε κάθε παιχνίδι (game_init): αντίγραφο στο
+; game_backup στην εκκίνηση, πίσω από εκεί σε κάθε νέο παιχνίδι.
+game_vars:
 ship_x:      db SHIP_START_X     ; = ship_x16 / 16
 ship_y:      dw SHIP_START_Y     ; = ship_y4 / 4
 ship_x16:    dw SHIP_START_X*16
@@ -400,18 +456,24 @@ ship_dir:    db ship_space_n
 ship_world:  db 0
 cam_x:       db CAM_START_X
 cam_y:       db CAM_START_Y
+paused:      db 0
+game_done:   db 0
+frames:      dw 0
+late_frames: dw 0
+game_vars_end:
+GAME_VARS_SIZE equ game_vars_end-game_vars
+
 bufs:        ds 2*BUF_SIZE      ; σελίδα #80, σελίδα #C0
 show_ma:     dw 0
 draw_page:   db #80
-paused:      db 0
 input:       db 0
 input_new:   db 0
 vbl_count:   db 0
 int_idx:     db #80
 game_r12:    db #20
 game_r13:    db 0
-frames:      dw 0
-late_frames: dw 0
+text_page:   db HUD_PAGE        ; text.asm: πού γράφει το κείμενο
+text_off:    dw HUD_OFFSET
 sp_x:        db 0               ; sprites.asm: το τρέχον sprite μετά το clip
 sp_y:        dw 0
 sp_w:        db 0
@@ -453,7 +515,8 @@ shots       equ enemies+ENEMY_N*EN_SIZE ; SHOT_N x SH_SIZE
 eshots      equ shots+SHOT_N*SH_SIZE    ; ESHOT_N x ES_SIZE
 recs0       equ eshots+ESHOT_N*ES_SIZE  ; εγγραφές sprites, σελίδα #80
 recs1       equ recs0+SPR_MAX*REC_SIZE  ; σελίδα #C0
-ram_end     equ recs1+SPR_MAX*REC_SIZE
+game_backup equ recs1+SPR_MAX*REC_SIZE  ; GAME_VARS_SIZE
+ram_end     equ game_backup+GAME_VARS_SIZE
 
 ; Τα bytes κάτω από τα sprites, στη χαμηλή μνήμη (κάτω από τη στοίβα)
 save0       equ #0040                   ; σελίδα #80 (μετά τα vectors)

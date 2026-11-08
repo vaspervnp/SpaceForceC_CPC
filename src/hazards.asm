@@ -386,23 +386,8 @@ update_hazards:
         jr z,.ok
         dec (hl)
         jr nz,.ok
-        ; ξανά από την αρχή
-        ld a,START_LIVES
-        ld (lives),a
-        ld hl,0
-        ld (score),hl
-        ld (ants_saved),hl
-        xor a
-        ld (shield),a
-        ld (espresso),a
-        ld (magnet),a
-        ld (spray),a
-        ld (engine),a
-        inc a
-        ld (baguette_level),a
-        ld (hud_dirty),a
-        ld hl,txt_clear
-        call set_status
+        ld a,1                  ; τέλος: το main_loop πάει στο game_end
+        ld (game_done),a
 .ok:    call check_ship_enemies
         call update_enemy_shots
         jp update_items

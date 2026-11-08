@@ -11,7 +11,23 @@ HUD_MA          equ 1024-HUD_ROWS*VIEW_W        ; 864
 HUD_OFFSET      equ HUD_MA*2                    ; #6C0
 HUD_LINES       equ HUD_ROWS*8                  ; 32
 
-; in: B = γραμμή του HUD (0-31), C = byte x   out: DE   (κρατάει HL)
+; Το κείμενο (text.asm) γράφει στη σελίδα text_page, με αρχή text_off:
+; στο HUD (text_to_hud) ή σε μια ολόκληρη οθόνη χωρίς scroll (text_to_page).
+
+text_to_hud:
+        ld a,HUD_PAGE
+        ld hl,HUD_OFFSET
+        jr text_set
+; in: A = σελίδα (#80 ή #C0)
+text_to_page:
+        ld hl,0
+text_set:
+        ld (text_page),a
+        ld (text_off),hl
+        ret
+
+; in: B = γραμμή (στο HUD 0-31, σε σελίδα 0-199), C = byte x
+; out: DE   (κρατάει HL)
 scr_addr:
         push hl
         ld a,b
@@ -27,17 +43,18 @@ scr_addr:
         ld e,c
         ld d,0
         add hl,de
-        ld de,HUD_OFFSET
+        ld de,(text_off)
         add hl,de               ; <= #7FF
+        ld e,l
         ld a,b
         and 7
         add a,a
         add a,a
         add a,a
         or h
-        or HUD_PAGE
+        ld hl,text_page
+        or (hl)
         ld d,a
-        ld e,l
         pop hl
         ret
 
@@ -64,6 +81,8 @@ clear_hud:
 ; Καθαρίζει το back buffer του παιχνιδιού.
 clear_page:
         ld a,(draw_page)
+; in: A = σελίδα
+clear_page_a:
         ld h,a
         ld l,0
         ld d,a
@@ -71,4 +90,27 @@ clear_page:
         ld bc,#3FFF
         ld (hl),0
         ldir
+        ret
+
+; Masked sprite σε σελίδα χωρίς scroll (title): μία διεύθυνση ανά γραμμή.
+; in: HL = γραφικό (mask,data), B = γραμμή, C = byte x, D = ύψος, A = πλάτος
+blit_masked:
+        ld (.w+1),a
+.row:   push bc
+        push de
+        call scr_addr
+.w:     ld b,0
+.px:    ld a,(de)
+        and (hl)
+        inc hl
+        or (hl)
+        inc hl
+        ld (de),a
+        inc de
+        djnz .px
+        pop de
+        pop bc
+        inc b
+        dec d
+        jr nz,.row
         ret

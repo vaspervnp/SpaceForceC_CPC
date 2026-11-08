@@ -24,7 +24,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.environ.get("CPCHEADLESS", os.path.expanduser("~/cpcemu")))
 import ctypes  # noqa: E402
 import cpc as cpcmod  # noqa: E402
-from cpc import CPC, JOY_UP, JOY_DOWN, JOY_LEFT, JOY_RIGHT  # noqa: E402
+from cpc import CPC, JOY_UP, JOY_DOWN, JOY_LEFT, JOY_RIGHT, JOY_FIRE  # noqa: E402
 
 cpcmod._lib.cpcemu_ram_ptr.restype = ctypes.POINTER(ctypes.c_uint8)
 cpcmod._lib.cpcemu_ram_ptr.argtypes = [ctypes.c_void_p, ctypes.c_int]
@@ -122,6 +122,38 @@ def run_measured(c, s, frames):
     return times[1:]            # το πρώτο ξεκίνησε πριν από τη μέτρηση
 
 
+def fire(c, frames=10):
+    c.joystick(JOY_FIRE)
+    c.run_frames(frames)
+    c.joystick(0)
+    c.run_frames(frames)
+
+
+def game_over_flow(c, s):
+    """Game over με ρεκόρ: όνομα (UP x2 = C), πίνακας, πίσω στον τίτλο."""
+    c.poke(s["score"], 6000 & 255)
+    c.poke(s["score"] + 1, 6000 >> 8)
+    c.poke(s["gameover"], 2)
+    c.run_frames(60)
+    c.screenshot(os.path.join(ROOT, "build/test_name.png"))
+    c.joystick(JOY_UP)
+    c.run_frames(2)
+    c.joystick(0)
+    c.run_frames(4)
+    c.joystick(JOY_UP)
+    c.run_frames(2)
+    c.joystick(0)
+    c.run_frames(4)
+    for _ in range(3):
+        fire(c)
+    c.run_frames(30)
+    c.screenshot(os.path.join(ROOT, "build/test_hiscores.png"))
+    top = bytes(c.read_ram(s["hiscores"], 5))
+    good = top == b"CAA" + bytes([6000 & 255, 6000 >> 8])
+    print("ρεκόρ: %r %s" % (top, "OK" if good else "ΛΑΘΟΣ"))
+    return good
+
+
 def main():
     s = symbols(SYM)
     c = CPC()
@@ -133,9 +165,15 @@ def main():
     c.type_text('RUN"DISC\n')
     c.run_frames(400)
     c.set_joystick_type(1)
+    c.screenshot(os.path.join(ROOT, "build/test_title.png"))
+    c.joystick(JOY_FIRE)        # title -> παιχνίδι
+    c.run_frames(10)
+    c.joystick(0)
+    c.run_frames(50)
     ok = True
     for name, mask, frames in SCENARIOS:
         f0, l0 = word(c, s["frames"]), word(c, s["late_frames"])
+        c.poke(s["invuln"], 250)    # οι δοκιμές κίνησης δεν πρέπει να χάσουν
         c.joystick(mask)
         times = run_measured(c, s, frames)
         c.joystick(0)
@@ -152,6 +190,7 @@ def main():
             ok = False
     late = word(c, s["late_frames"])
     print("σύνολο: %d καρέ, %d άργησαν" % (word(c, s["frames"]), late))
+    ok = game_over_flow(c, s) and ok
     sys.exit(0 if ok else 1)
 
 
