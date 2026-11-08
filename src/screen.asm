@@ -38,8 +38,8 @@ scr_addr:
         ld e,(hl)
         inc hl
         ld a,(hl)
-draw_page equ $+1
-        or #C0                  ; σελίδα: #80 ή #C0, την αλλάζει το flip
+        ld hl,draw_page
+        or (hl)                 ; σελίδα: #80 ή #C0, την αλλάζει το flip
         ld d,a
         ld a,e                  ; + x: μέσα σε μία γραμμή, δεν περνάει όριο 2K
         add a,c

@@ -69,26 +69,28 @@ flip:
         jr c,.wait
 .swap:  ld (hl),0
         ld a,(draw_page)
+        ld hl,(show_ma)
         call show_page
         ld a,(draw_page)
         xor #40                 ; #80 <-> #C0
         ld (draw_page),a
         ret
 
-; in: A = high byte της σελίδας (#80 ή #C0)
+; in: A = high byte της σελίδας (#80 ή #C0), HL = MA της πάνω αριστερής
+; γωνίας (0-1023, scroll.asm)
 show_page:
         rrca                    ; #80 -> #20, #C0 -> #30 (R12 bits 5-4)
         rrca
         and #30
+        or h                    ; MA bits 9-8
         ld bc,#BC0C
         out (c),c
         inc b
         out (c),a
-        ld bc,#BC0D             ; R13 = 0: χωρίς offset (το scroll είναι M3)
+        ld bc,#BC0D
         out (c),c
         inc b
-        xor a
-        out (c),a
+        out (c),l
         ret
 
 ;------------------------------------------------------------------

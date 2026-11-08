@@ -1,0 +1,137 @@
+"""Αυτόματο test του Space Force C σε CPC 6128 χωρίς GUI.
+
+Τρέχει τη δισκέτα στον headless emulator του ~/cpcemu (floooh/chips),
+οδηγεί το σκάφος με το joystick σε σενάρια κίνησης και μετά από κάθε σενάριο:
+  - διαβάζει από τη RAM τα frames / late_frames (μέσω build/sfc.sym):
+    late = καρέ που δεν χώρεσαν στα 40 ms
+  - ελέγχει ότι η σελίδα που εμφανίζεται είναι ακριβώς ο χάρτης κάτω από την
+    κάμερά της, κελί-κελί (εκτός από τα κελιά κάτω από το σκάφος)
+  - μετράει τον χρόνο εργασίας κάθε καρέ: από το flip ως την ώρα που ο
+    PC φτάνει στον βρόχο αναμονής του επόμενου flip (ανάλυση 100 µs)
+  - γράφει screenshot στο build/test_<σενάριο>.png
+
+    python3 tools/headless.py [build/SpaceForceC.dsk]
+
+CPCHEADLESS=/path για άλλον φάκελο του emulator. Βγαίνει με 1 αν κάποιος
+έλεγχος αποτύχει.
+"""
+
+import os
+import sys
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.environ.get("CPCHEADLESS", os.path.expanduser("~/cpcemu")))
+from cpc import CPC, JOY_UP, JOY_DOWN, JOY_LEFT, JOY_RIGHT  # noqa: E402
+
+DSK = sys.argv[1] if len(sys.argv) > 1 else os.path.join(ROOT, "build/SpaceForceC.dsk")
+SYM = os.path.join(ROOT, "build/sfc.sym")
+TILES = open(os.path.join(ROOT, "assets/data/tiles.bin"), "rb").read()
+
+MAP_W, MAP_H, VIEW_W, VIEW_H = 64, 48, 40, 25
+BUF_SIZE = 5
+SHIP_W, SHIP_H = 6, 24
+
+SCENARIOS = [
+    ("right", JOY_RIGHT, 120),
+    ("down_right", JOY_DOWN | JOY_RIGHT, 120),
+    ("down", JOY_DOWN, 100),
+    ("up_left", JOY_UP | JOY_LEFT, 200),
+    ("left", JOY_LEFT, 150),
+    ("up", JOY_UP, 150),
+    ("down_left", JOY_DOWN | JOY_LEFT, 100),
+    ("up_right", JOY_UP | JOY_RIGHT, 160),
+    ("idle", 0, 50),
+]
+
+
+def symbols(path):
+    sym = {}
+    for line in open(path):
+        parts = line.split()
+        if len(parts) >= 2 and parts[1].startswith("#"):
+            sym[parts[0].lower()] = int(parts[1][1:], 16)
+    return sym
+
+
+def word(c, addr):
+    lo, hi = c.read_ram(addr, 2)
+    return lo | hi << 8
+
+
+def check_view(c, s):
+    """Η σελίδα που εμφανίζεται == ο χάρτης κάτω από την κάμερά της."""
+    draw_page = c.peek(s["draw_page"])
+    shown = 0xC0 if draw_page == 0x80 else 0x80
+    buf = s["bufs"] + (BUF_SIZE if shown == 0xC0 else 0)
+    cx, cy, ox = c.read_ram(buf, 3)
+    oy = word(c, buf + 3)
+    bg_map = c.read_ram(s["bg_map"], MAP_W * MAP_H)
+    ship = (ox // 2, (ox + SHIP_W - 1) // 2, oy // 8, (oy + SHIP_H - 1) // 8)
+    bad = []
+    for wy in range(cy, cy + VIEW_H):
+        for wx in range(cx, cx + VIEW_W):
+            if ship[0] <= wx <= ship[1] and ship[2] <= wy <= ship[3]:
+                continue
+            tile = bg_map[wy * MAP_W + wx // 2]
+            src = tile * 32 + (wx & 1) * 2
+            ma = (wy * 40 + wx) % 1024
+            for line in range(8):
+                addr = (shown << 8) | (line << 11) | (2 * ma)
+                want = TILES[src + line * 4: src + line * 4 + 2]
+                got = c.read_ram(addr, 2)
+                if bytes(got) != want:
+                    bad.append((wx, wy, line))
+                    break
+    return shown, cx, cy, bad
+
+
+STEP_US = 100
+
+
+def run_measured(c, s, frames):
+    """Τρέχει frames καρέ των 50 Hz· επιστρέφει τους χρόνους εργασίας (ms)."""
+    wait_lo, wait_hi = s["flip.wait"], s["flip.swap"]
+    times, busy, waiting = [], 0, False
+    for _ in range(frames * 20000 // STEP_US):
+        c.run_us(STEP_US)
+        now_waiting = wait_lo <= c.pc < wait_hi
+        if now_waiting and not waiting and busy:
+            times.append(busy * STEP_US / 1000)
+        if not now_waiting:
+            busy = 0 if waiting else busy + 1
+        waiting = now_waiting
+    return times[1:]            # το πρώτο ξεκίνησε πριν από τη μέτρηση
+
+
+def main():
+    s = symbols(SYM)
+    c = CPC()
+    c.run_frames(150)
+    c.insert_disc(DSK)
+    c.type_text('RUN"DISC\n')
+    c.run_frames(250)
+    c.set_joystick_type(1)
+    ok = True
+    for name, mask, frames in SCENARIOS:
+        f0, l0 = word(c, s["frames"]), word(c, s["late_frames"])
+        c.joystick(mask)
+        times = run_measured(c, s, frames)
+        c.joystick(0)
+        c.run_frames(1)
+        f1, l1 = word(c, s["frames"]), word(c, s["late_frames"])
+        shown, cx, cy, bad = check_view(c, s)
+        ship = (c.peek(s["ship_x"]), word(c, s["ship_y"]))
+        status = "OK" if not bad else "ΛΑΘΟΣ %d κελιά, π.χ. %s" % (len(bad), bad[:3])
+        work = "%4.1f/%4.1f ms" % (sum(times) / len(times), max(times)) if times else "   -"
+        print("%-11s %3d καρέ  late %d  εργασία μέση/μέγ. %s  σκάφος %3d,%3d  κάμερα %2d,%2d  %s"
+              % (name, f1 - f0, l1 - l0, work, ship[0], ship[1], cx, cy, status))
+        c.screenshot(os.path.join(ROOT, "build/test_%s.png" % name))
+        if bad or f1 == f0:
+            ok = False
+    late = word(c, s["late_frames"])
+    print("σύνολο: %d καρέ, %d άργησαν" % (word(c, s["frames"]), late))
+    sys.exit(0 if ok else 1)
+
+
+if __name__ == "__main__":
+    main()

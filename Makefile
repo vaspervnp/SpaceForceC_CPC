@@ -6,6 +6,8 @@
 #   make run-snap   Caprice32 με το snapshot
 #   make run-cpcemu CPCEMU 2.5 με τη δισκέτα (tools/cpcemu.sh)
 #   make shot       Caprice32 χωρίς παράθυρο -> build/screenshot.png
+#   make test       headless CPC (~/cpcemu): σενάρια κίνησης, late frames,
+#                   έλεγχος της οθόνης κελί-κελί
 #   make assets     ξαναπαράγει τα assets/data από τα assets/src
 #   make clean
 #
@@ -31,15 +33,15 @@ ASSET_DATA := $(wildcard assets/data/*.asm)
 RASMFLAGS := -I src $(if $(PROFILE),-DPROFILE=1)
 FLAGS_STAMP := $(BUILD)/flags
 
-.PHONY: all snap run run-snap run-cpcemu shot assets clean FORCE
+.PHONY: all snap run run-snap run-cpcemu shot test assets clean FORCE
 
 all: $(DSK)
 
 # Το rasm γράφει το SFC.BIN σε νέα EDSK· το iDSK προσθέτει τον loader
 # (που κρατάει το Extended format) και ελέγχουμε το header στο τέλος.
-$(DSK): $(SRC) $(ASSET_DATA) $(FLAGS_STAMP)
+$(DSK): $(SRC) $(ASSET_DATA) $(FLAGS_STAMP) Makefile
 	rm -f $@
-	$(RASM) $(RASMFLAGS) src/main.asm -o $(BUILD)/sfc
+	$(RASM) $(RASMFLAGS) src/main.asm -o $(BUILD)/sfc -s -sq -os $(BUILD)/sfc.sym
 	printf '10 RUN"SFC.BIN"\r\n' > $(LOADER)
 	$(IDSK) $@ -i $(LOADER) -t 0 > /dev/null 2>&1
 	@head -c 21 $@ | grep -q 'EXTENDED CPC DSK File' || { echo "$@: δεν είναι Extended DSK"; exit 1; }
@@ -60,6 +62,9 @@ run-snap: $(SNA)
 
 shot: $(DSK)
 	tools/cap32_shot.sh $(DSK) $(BUILD)/screenshot.png
+
+test: $(DSK)
+	$(PYTHON) tools/headless.py $(DSK)
 
 run-cpcemu: $(DSK)
 	tools/cpcemu.sh $(DSK)

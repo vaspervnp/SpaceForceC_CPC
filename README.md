@@ -6,9 +6,10 @@ Arcade multi-directional scrolling shooter για τον **Amstrad CPC 6128** σ
 
 ## Κατάσταση
 
-Έχουν γίνει το M0 (build pipeline) και το M2 (engine core). Το demo οδηγεί
-το σκάφος πάνω από το φόντο στα 25 FPS με double buffering. Χειρισμός:
-κέρσορες / QAOP / joystick, Fire = αλλαγή space/earth, ESC = παύση.
+Έχουν γίνει το M0 (build pipeline), το M2 (engine core) και το M3
+(multi-directional scrolling, εκτός από το HUD). Το demo οδηγεί το σκάφος σε
+χάρτη 4x2 οθονών με hardware scroll, στα 25 FPS με double buffering.
+Χειρισμός: κέρσορες / QAOP / joystick, Fire = αλλαγή space/earth, ESC = παύση.
 
 - [design_document.md](design_document.md): το game design document
 - [todo.md](todo.md): τα milestones της ανάπτυξης
@@ -58,6 +59,7 @@ make
 | `make run` | Caprice32 με τη δισκέτα και autorun |
 | `make snap` / `make run-snap` | snapshot (`build/sfc.sna`) που ξεκινάει κατευθείαν |
 | `make shot` | Caprice32 χωρίς παράθυρο, γράφει `build/screenshot.png` |
+| `make test` | headless CPC (`~/cpcemu`): σενάρια κίνησης, χρόνος καρέ, έλεγχος οθόνης κελί-κελί |
 | `make run-cpcemu` | CPCEMU 2.5 για Linux (`CPCEMU_TGZ=` το tarball από το cpc-emu.org) |
 | `make PROFILE=1 ...` | raster bars στο border: ο χρόνος κάθε φάσης του καρέ |
 | `make assets` | ξαναπαράγει τα `assets/data` από τα `assets/src` |
