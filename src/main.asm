@@ -89,6 +89,7 @@ game_start:
         ld (level),a
         ld hl,LIFE_EVERY
         ld (next_life),hl
+        call energy_full
         ifndef START_LEVEL
         ld hl,cut_table         ; η ιστορία
         call cut_play
@@ -564,7 +565,7 @@ boss_fan:    db 0
 boss_ptr:    dw 0
 boss_ver:    db 0               ; αλλάζει όταν αλλάξει η εικόνα του boss
 boss_drop:   db 0               ; η μπαταρία της μάχης δόθηκε
-energy:      db ENERGY_MAX      ; hazards.asm
+energy:      db 0               ; hazards.asm
 energy_cells: db 0              ; όσα κελιά φαίνονται στο HUD
 frames:      dw 0
 late_frames: dw 0
@@ -581,6 +582,7 @@ int_idx:     db #80
 game_r12:    db #20
 game_r13:    db 0
 level:       db 0               ; 0-7
+difficulty:  db 0               ; 0 Easy, 1 Medium, 2 Hard: μένει από παιχνίδι σε παιχνίδι
 next_life:   dw LIFE_EVERY      ; το σκορ της επόμενης ζωής (items.asm)
 cut_fast:    db 0               ; ui.asm: οι σκηνές
 cut_skip:    db 0

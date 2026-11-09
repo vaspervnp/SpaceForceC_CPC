@@ -18,6 +18,8 @@ title_lines:
         db "2  REDEFINE KEYS ",0
         TROW 14
         db "3  HIGH SCORES   ",0
+        TROW 15
+        db "4  DIFFICULTY    ",0
         db #FF
 
 name_lines:

@@ -47,6 +47,7 @@ title_screen:
         ld c,62
         call blit_enemy
         call hud_title
+        call draw_difficulty
         call wait_release
 .loop:  call wait_frame
         call read_input
@@ -74,11 +75,43 @@ title_screen:
         call redefine_keys
         jp title_screen
 .no2:   ld a,(keymap+7)
+        bit 0,a                 ; 4: η επόμενη δυσκολία
+        jr nz,.no4
+        call menu_sfx
+        ld a,(difficulty)
+        inc a
+        cp 3
+        jr c,$+3
+        xor a
+        ld (difficulty),a
+        call draw_difficulty
+        call wait_release
+        jp .loop
+.no4:   ld a,(keymap+7)
         bit 1,a                 ; 3
-        jr nz,.loop
+        jp nz,.loop
         call menu_sfx
         call hiscore_screen
         jp title_screen
+
+; Η δυσκολία δίπλα στο «4  DIFFICULTY».
+draw_difficulty:
+        ld a,(difficulty)
+        ld e,a
+        add a,a
+        add a,a
+        add a,a
+        sub e                   ; *7
+        ld e,a
+        ld d,0
+        ld hl,txt_difficulty
+        add hl,de
+        ld b,15*8
+        ld c,51
+        jp print_str
+
+txt_difficulty:
+        db "EASY  ",0,"MEDIUM",0,"HARD  ",0
 
 menu_sfx:
         ld a,sfx_menu

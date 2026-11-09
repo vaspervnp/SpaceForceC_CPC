@@ -273,8 +273,7 @@ apply_item:
         jp .msg
 .life:  cp IT_ENERGY
         jr nz,.xlife
-        ld a,ENERGY_MAX
-        ld (energy),a
+        call energy_full
         ld hl,txt_energy
         jp .msg
 .xlife: cp IT_LIFE

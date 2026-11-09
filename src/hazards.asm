@@ -6,8 +6,8 @@
 ;   Bad Breath Torpedo zigzag γύρω από την πορεία της· κοστίζει ζωή
 ;   επαφή με εχθρό     κοστίζει ζωή, και ο εχθρός σκάει
 ;
-; Κάθε χτύπημα κοστίζει 1 από τα ENERGY_MAX της ενέργειας και 1 s άτρωτο (το
-; σκάφος αναβοσβήνει). Με 0 ενέργεια: χάνεται ζωή, 2 s άτρωτο και ξανά γεμάτη
+; Κάθε χτύπημα κοστίζει 1 από την ενέργεια (10, 5 ή 2, ανάλογα με τη δυσκολία)
+; και 1 s άτρωτο (το σκάφος αναβοσβήνει). Με 0 ενέργεια: χάνεται ζωή, 2 s άτρωτο και ξανά γεμάτη
 ; ενέργεια. Με 0 ζωές: GAME OVER για 3 s και μετά ο πίνακας ρεκόρ. Το Bubble Wrap (items.asm) απορροφά ένα
 ; χτύπημα.
 
@@ -34,7 +34,6 @@ STICK_TIME      equ 50          ; 2 s
 SLOW_TIME       equ 75          ; 3 s
 INVULN_TIME     equ 50          ; 2 s, μετά από χαμένη ζωή
 INVULN_HIT      equ 25          ; 1 s, μετά από χτύπημα
-ENERGY_MAX      equ 10          ; χτυπήματα ανά ζωή
 ENERGY_X        equ 56          ; η μπάρα στο HUD (γραμμή 16), 10 κελιά
 GAMEOVER_TIME   equ 75
 START_LIVES     equ 3
@@ -395,8 +394,7 @@ ship_hit:
         ld hl,lives
         dec (hl)
         jr z,.over
-        ld a,ENERGY_MAX
-        ld (energy),a
+        call energy_full
         ld hl,txt_lifelost
         jp set_status
 .over:  ld a,mus_gameover
@@ -407,6 +405,20 @@ ship_hit:
         ld (gameover),a
         ld hl,txt_gameover
         jp set_status
+
+; Γεμάτη ενέργεια, όση δίνει η δυσκολία.
+energy_full:
+        ld a,(difficulty)
+        ld e,a
+        ld d,0
+        ld hl,energy_table
+        add hl,de
+        ld a,(hl)
+        ld (energy),a
+        ret
+
+energy_table:
+        db 10,5,2               ; Easy, Medium, Hard
 
 ; Χρονόμετρα: άτρωτο, επιβράδυνση, game over. Μία φορά ανά καρέ.
 update_hazards:

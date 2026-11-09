@@ -340,6 +340,42 @@ def energy_flow(c, s):
     return good and full
 
 
+def difficulty_flow(s):
+    """Το πλήκτρο 4 στον τίτλο: 10, 5 ή 2 χτυπήματα ανά ζωή."""
+    good = True
+    for presses, name, full in ((0, "Easy", 10), (1, "Medium", 5), (2, "Hard", 2), (3, "ξανά Easy", 10)):
+        c = CPC()
+        c.run_frames(150)
+        c.insert_disc(DSK)
+        c.type_text('RUN"DISC\n')
+        wait_title(c, s)
+        for _ in range(presses):
+            c.key_down(ord("4"))
+            c.run_frames(6)
+            c.key_up(ord("4"))
+            c.run_frames(6)
+        c.run_frames(10)
+        if presses == 2:
+            c.screenshot(os.path.join(ROOT, "build/test_difficulty.png"))
+        c.set_joystick_type(1)
+        start_game(c, s)
+        c.run_frames(30)
+        first = c.peek(s["energy"])
+        clear_enemies(c, s)
+        seen, lives0, n = [], c.peek(s["lives"]), 0
+        while c.peek(s["lives"]) == lives0 and n < 30000:
+            c.run_frames(1)
+            n += 1
+            e = c.peek(s["energy"])
+            if not seen or seen[-1] != e:
+                seen.append(e)
+        want = list(range(full, 0, -1)) + [full]
+        this = first == full and seen[:len(want)] == want
+        print("%-10s ενέργεια %s %s" % (name, seen, "OK" if this else "ΛΑΘΟΣ"))
+        good = good and this
+    return good
+
+
 def game_over_flow(c, s):
     """Game over με ρεκόρ: όνομα (UP x2 = C), πίνακας, πίσω στον τίτλο."""
     c.poke(s["score"], 6000 & 255)
@@ -403,6 +439,7 @@ def main():
     ok = ok_level and whole_game(c, s) and ok
     ok = game_over_flow(c, s) and ok
     ok = energy_flow(c, s) and ok
+    ok = difficulty_flow(s) and ok
     sys.exit(0 if ok else 1)
 
 
