@@ -7,6 +7,9 @@ LV_SPAWNS       equ 164
 LV_PARAMS       equ 128
 MOBS_OFF        equ 1472
 
+cut_table:
+        dw cut_intro+#8000,cut_ending+#8000
+
 level_table:
         dw lv1_map,lv1_hdr,boss1_gfx+#8000,tileset_space+#8000,mobset_space+#8000  ; THE ASTEROID BELT OF LOST LUGGAGE
         dw lv2_map,lv2_hdr,boss2_gfx+#8000,tileset_bureau+#8000,mobset_space+#8000  ; THE NEBULA OF BUREAUCRACY

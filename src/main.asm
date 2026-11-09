@@ -87,6 +87,10 @@ game_start:
         xor a
         endif
         ld (level),a
+        ifndef START_LEVEL
+        ld hl,cut_table         ; η ιστορία
+        call cut_play
+        endif
 level_start:
         ld sp,STACK_TOP
         call game_init
@@ -284,6 +288,7 @@ init_page:
         ld a,(cam_y)
         ld (ix+BUF_CY),a
         ld (ix+BUF_NREC),0
+        ld (ix+BUF_VER),#FF
         ld hl,recs0
         ld de,save0
         ld a,(draw_page)
@@ -538,6 +543,7 @@ boss_cells:  db 0
 boss_dir:    db 0
 boss_fan:    db 0
 boss_ptr:    dw 0
+boss_ver:    db 0               ; αλλάζει όταν αλλάξει η εικόνα του boss
 frames:      dw 0
 late_frames: dw 0
 game_vars_end:
@@ -553,6 +559,8 @@ int_idx:     db #80
 game_r12:    db #20
 game_r13:    db 0
 level:       db 0               ; 0-7
+cut_fast:    db 0               ; ui.asm: οι σκηνές
+cut_skip:    db 0
 snd_ticks:   db 0               ; ήχος (hw.asm, sound.asm)
 sfx_req:     db 0
 music_req:   db 0
@@ -652,6 +660,7 @@ gfx4_end:
 gfx5_data:
         include "../assets/data/enemies.asm"
         include "../assets/data/pickups.asm"    ; μυρμήγκια (και τα power-ups του M8)
+        include "uitext.asm"
 gfx5_end:
 
         assert gfx5_end <= BOSS_GFX, "bank 5: GFX5 overlaps the boss"

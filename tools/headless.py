@@ -34,10 +34,9 @@ cpcmod._lib.cpcemu_ram_ptr.argtypes = [ctypes.c_void_p, ctypes.c_int]
 
 DSK = sys.argv[1] if len(sys.argv) > 1 else os.path.join(ROOT, "build/SpaceForceC.dsk")
 SYM = os.path.join(ROOT, "build/sfc.sym")
-TILES = open(os.path.join(ROOT, "assets/data/tiles.bin"), "rb").read()
 
 MAP_W, MAP_H, VIEW_W, VIEW_H = 64, 48, 40, 21
-BUF_SIZE = 7
+BUF_SIZE = 10               # scroll.asm
 REC_SIZE = 8
 
 SCENARIOS = [
@@ -89,6 +88,7 @@ def check_view(c, s):
             for wx in range(x // 2, (x + w - 1) // 2 + 1):
                 covered.add((wx, wy))
     bg_map = bank_read(c, 4, s["bg_map"], MAP_W * MAP_H)
+    tiles = bank_read(c, 4, s["tiles_gfx"], 512)     # της πίστας, όχι τα αρχικά
     bad = []
     for wy in range(cy, cy + VIEW_H):
         for wx in range(cx, cx + VIEW_W):
@@ -99,7 +99,7 @@ def check_view(c, s):
             ma = (wy * 40 + wx) % 1024
             for line in range(8):
                 addr = (shown << 8) | (line << 11) | (2 * ma)
-                want = TILES[src + line * 4: src + line * 4 + 2]
+                want = tiles[src + line * 4: src + line * 4 + 2]
                 got = c.read_ram(addr, 2)
                 if bytes(got) != want:
                     bad.append((wx, wy, line))
@@ -133,6 +133,24 @@ def wait_title(c, s):
             c.run_frames(25)
             return
     raise SystemExit("ο τίτλος δεν εμφανίστηκε")
+
+
+def start_game(c, s, shots=False):
+    """Από τον τίτλο στο παιχνίδι: η ιστορία με fire, η οθόνη της πίστας."""
+    k = 0
+    while c.peek(s["music_now"]) == 1 and k < 15:       # mus_title
+        fire(c)
+        if shots:
+            c.run_frames(60)
+            c.screenshot(os.path.join(ROOT, "build/test_intro%d.png" % k))
+        k += 1
+    if shots:
+        print("ιστορία: %d πατήματα" % k)
+        c.screenshot(os.path.join(ROOT, "build/test_level1.png"))
+    n = 0
+    while word(c, s["frames"]) == 0 and n < 5:          # η οθόνη της πίστας
+        fire(c)
+        n += 1
 
 
 def fire(c, frames=10):
@@ -202,7 +220,7 @@ def boss_flow(c, s):
     late0, f0 = word(c, s["late_frames"]), word(c, s["frames"])
     hp0 = c.peek(boss + EN_HP)
     c.joystick(JOY_FIRE)
-    junk, n, bands = 0, 0, 0
+    junk, n, bands, trails = 0, 0, 0, 0
     sky = c.peek(s["level"]) in (4, 6)      # χρωματιστός ουρανός: φαίνονται
     while c.peek(boss + EN_STATE) == 0 and n < 6000:
         c.poke(s["invuln"], 50)
@@ -214,6 +232,8 @@ def boss_flow(c, s):
             if c.peek(s["eshots"] + e * 6 + 2) and c.peek(s["eshots"] + e * 6 + 3) == 4:
                 junk += 1
                 break
+        if n % 37 == 0 and check_view(c, s)[4]:         # ίχνη στο φόντο;
+            trails += 1
         if n == 300:
             c.screenshot(os.path.join(ROOT, "build/test_fight%d.png" % (c.peek(s["level"]) + 1)))
     c.joystick(0)
@@ -222,7 +242,9 @@ def boss_flow(c, s):
     print("boss %d: αντοχή %d -> %d σε %.1f s, hardware στον αέρα %d καρέ, late %d/%d, σκάφος %d,%d"
           % (c.peek(s["level"]) + 1, hp0, c.peek(boss + EN_HP), n / 50, junk, late, fr,
              c.peek(s["ship_x"]), word(c, s["ship_y"])))
-    good = n < 6000 and junk > 0 and bands == 0
+    good = n < 6000 and junk > 0 and bands == 0 and trails == 0
+    if trails:
+        print("   ΙΧΝΗ ΣΤΟ ΦΟΝΤΟ σε %d ελέγχους" % trails)
     if bands:
         print("   ΜΑΥΡΕΣ ΛΩΡΙΔΕΣ σε %d καρέ: VSYNC μέσα στην εικόνα" % bands)
     c.run_frames(30)
@@ -256,9 +278,18 @@ def whole_game(c, s):
     capped = word(c, s["score"]) == 65535
     print("σκορ στο όριο: %d %s" % (word(c, s["score"]), "OK" if capped else "ΛΑΘΟΣ"))
     good = good and capped
-    # μετά τον τελευταίο: Level Complete -> όνομα -> πίνακας -> τίτλος
+    # μετά τον τελευταίο: Level Complete -> ιστορία -> όνομα -> πίνακας -> τίτλος
     score = word(c, s["score"])
     fire(c)
+    c.run_frames(30)
+    k = 0
+    while c.peek(s["music_now"]) == 5 and k < 15:       # mus_ending
+        c.run_frames(100)
+        c.screenshot(os.path.join(ROOT, "build/test_ending%d.png" % k))
+        fire(c)
+        k += 1
+    print("τέλος: %d πατήματα" % k)
+    good = good and 4 <= k <= 8                         # 4 οθόνες, 1-2 πατήματα η καθεμία
     c.run_frames(30)
     c.screenshot(os.path.join(ROOT, "build/test_win.png"))
     for _ in range(3):
@@ -269,9 +300,7 @@ def whole_game(c, s):
     print("τέλος παιχνιδιού: σκορ %d, ρεκόρ %r %s" % (score, top, "OK" if won else "ΛΑΘΟΣ"))
     fire(c)                         # πίνακας -> τίτλος
     c.run_frames(30)
-    fire(c)                         # νέο παιχνίδι
-    c.run_frames(20)
-    fire(c)
+    start_game(c, s)                # νέο παιχνίδι
     c.run_frames(30)
     return good and won and check_level(c, s, 1)
 
@@ -313,9 +342,7 @@ def main():
     wait_title(c, s)
     c.set_joystick_type(1)
     c.screenshot(os.path.join(ROOT, "build/test_title.png"))
-    fire(c)                     # title -> οθόνη της πίστας
-    c.screenshot(os.path.join(ROOT, "build/test_level1.png"))
-    fire(c)                     # -> παιχνίδι
+    start_game(c, s, shots=True)
     c.run_frames(30)
     ok_level = check_level(c, s, 1)
     ok = True

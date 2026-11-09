@@ -18,7 +18,8 @@ LV_BOSS         equ 3           ; 0 = χωρίς boss (οι παράμετροι
 LV_SKY          equ 4           ; το χρώμα του pen 0 (gate array)
 LV_TEXT         equ 5           ; όνομα, 2 γραμμές χιούμορ, με 0 στο τέλος
 STAGE           equ #8000       ; προσωρινά τα συμπιεσμένα
-STAGE_SIZE      equ 2048        ; >= το μεγαλύτερο κομμάτι (levels.py)
+STAGE_SIZE      equ 4096        ; >= το μεγαλύτερο κομμάτι (levels.py)
+CUT_BUF         equ #9000       ; οι σκηνές ανοίγουν εδώ, στην ίδια σελίδα (ui.asm)
 GA_RAM_C7       equ #C7
 
 ; Η πίστα (level): χάρτης και header στο bank 4, οι μεταβλητές της.

@@ -84,13 +84,7 @@ def main():
     record(c, 50 * 16, title)
     render(title, os.path.join(h.ROOT, 'build/sound_title.wav'))
     game = []
-    c.joystick(JOY_FIRE)                # title -> οθόνη της πίστας
-    record(c, 10, game)
-    c.joystick(0)
-    record(c, 10, game)
-    c.joystick(JOY_FIRE)                # -> παιχνίδι
-    record(c, 10, game)
-    c.joystick(0)
+    h.start_game(c, s)                  # title -> ιστορία -> παιχνίδι
     record(c, 50 * 4, game)
     c.poke(s["invuln"], 250)
     for w in range(3):                  # τα τρία όπλα (W = επόμενο)

@@ -28,8 +28,9 @@ BOSS_TOP        equ 8           ; γραμμές από την κορυφή τη
 BOSS_BOTTOM     equ VIEW_H*8-BOSS_H-8   ; ως εκεί στην κάθοδο
 BOSS_BOOM_TIME  equ 75
 BOSS_SCORE      equ 5000
-BAR_LABEL_X     equ 36          ; στο HUD, γραμμή 24
-BAR_X           equ 46
+BAR_Y           equ 0           ; η πάνω γραμμή του HUD είναι ελεύθερη
+BAR_LABEL_X     equ 0
+BAR_X           equ 10          ; ως 15 κελιά
 
 ; Οι παράμετροι, στο header της πίστας (bank 4)
 BP_HP           equ LEVEL_HDR+LV_PARAMS
@@ -82,7 +83,7 @@ boss_start:
         add hl,de
 .y:     ld (ix+EN_Y),l
         ld (ix+EN_Y+1),h
-        ld (iy+SPR_FLAGS),1
+        ld (iy+SPR_FLAGS),SPR_BOSS
         ld a,mus_boss
         call play_music
         ld hl,BP_HELLO
@@ -258,13 +259,16 @@ boss_arena:
         ld (ship_vy),a
         ret
 
-; Το sprite IY στη θέση του, με το κούνημα του wave_table στο y.
+; Το sprite IY στη θέση του, με το κούνημα του wave_table στο y, ανά 4 καρέ:
+; τα 2 από τα 4 ο boss δεν ξαναζωγραφίζεται (sprites.asm), και είναι το
+; μεγαλύτερο sprite του παιχνιδιού.
 boss_place:
-        ld a,(ix+EN_X)
-        ld (iy+SPR_X),a
+        ld a,(frames)
+        and 3
+        ret nz
         inc (ix+EN_PHASE)
         ld a,(ix+EN_PHASE)
-        rrca
+        rrca                    ; το κούνημα ανά 8 καρέ
         and 15
         ld e,a
         ld d,0
@@ -284,8 +288,28 @@ boss_place:
         cp 8
         jr c,.put
 .add:   add hl,de
-.put:   ld (iy+SPR_Y),l
+.put:   ld a,l                  ; άλλαξε κάτι; (κανένα καρέ ξανά χωρίς λόγο)
+        xor (iy+SPR_Y)
+        ld b,a
+        ld a,h
+        xor (iy+SPR_Y+1)
+        or b
+        ld b,a
+        ld a,(ix+EN_X)
+        xor (iy+SPR_X)
+        or b
+        ret z
+        ld a,(ix+EN_X)
+        ld (iy+SPR_X),a
+        ld (iy+SPR_Y),l
         ld (iy+SPR_Y+1),h
+; Η εικόνα του boss άλλαξε: οι σελίδες πρέπει να τον ξαναζωγραφίσουν.
+boss_changed:
+        ld hl,boss_ver
+        ld a,(hl)
+        inc a
+        and #7F
+        ld (hl),a
         ret
 
 ; Το γραφικό: καπάκι κλειστό ή ανοιχτό (bank 5).
@@ -295,15 +319,26 @@ boss_frame:
         or a
         jr z,.set
         ld hl,BOSS_GFX+BOSS_SZ
-.set:   ld (iy+SPR_GFX),l
+.set:   ld a,l
+        cp (iy+SPR_GFX)
+        call nz,boss_set_changed
+        ld (iy+SPR_GFX),l
         ld (iy+SPR_GFX+1),h
         ld (iy+SPR_W),BOSS_W
         ld (iy+SPR_H),BOSS_H
         ld (iy+SPR_BANK),BANK_ENEMIES
         ret
 
+boss_set_changed:
+        push hl
+        call boss_changed
+        pop hl
+        ret
+
 ; Από το enemy_explode: η αντοχή του τελείωσε.
 boss_explode:
+        ld (iy+SPR_FLAGS),1
+        call boss_changed
         ld (ix+EN_TIMER),BOSS_BOOM_TIME
         ld de,BOSS_SCORE
         call add_score
@@ -349,7 +384,7 @@ draw_boss_bar:
         ld a,2
         ld (boss_on),a
         ld hl,txt_boss
-        ld b,STATUS_Y
+        ld b,BAR_Y
         ld c,BAR_LABEL_X
         jp print_str
 .bar:   ld hl,(boss_ptr)
@@ -377,7 +412,7 @@ draw_boss_bar:
         add a,BAR_X
         ld c,a
         ld a,e
-        ld b,STATUS_Y
+        ld b,BAR_Y
         jp print_char
 
 txt_boss:   db "BOSS",0

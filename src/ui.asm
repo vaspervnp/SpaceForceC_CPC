@@ -10,6 +10,7 @@ HI_N            equ 5
 HI_SIZE         equ 5           ; 3 γράμματα + dw σκορ
 HI_TIME         equ 250         ; 10 s στον πίνακα, μετά πίσω στον τίτλο
 LEVEL_WAIT      equ 100         ; 4 s στις οθόνες των πιστών
+CUT_WAIT        equ 250         ; 10 s σε κάθε οθόνη της ιστορίας
 NAME_REPEAT     equ 8           ; καρέ πριν αρχίσει η επανάληψη στο όνομα
 
 ; Γραμμές της κάθε σειράς (8 γραμμές ανά σειρά χαρακτήρων)
@@ -30,8 +31,10 @@ title_screen:
         ld b,8
         ld c,27
         call print_big
+        RAM_ENEMIES
         ld hl,title_lines
         call print_lines
+        RAM_WORLD
         ; διακόσμηση: το σκάφος αριστερά, ένας διοικητής δεξιά
         ld hl,ship_gfx+ship_space_ne*SHIP_SZ
         ld b,4
@@ -69,13 +72,13 @@ title_screen:
         jr nz,.no2
         call menu_sfx
         call redefine_keys
-        jr title_screen
+        jp title_screen
 .no2:   ld a,(keymap+7)
         bit 1,a                 ; 3
         jr nz,.loop
         call menu_sfx
         call hiscore_screen
-        jr title_screen
+        jp title_screen
 
 menu_sfx:
         ld a,sfx_menu
@@ -215,6 +218,9 @@ redefine_keys:
 
 ; Το όνομα της ενέργειας B στη σειρά της.
 .name:  push bc
+        RAM_ENEMIES
+        pop bc
+        push bc
         ld a,b
         add a,a
         ld e,a
@@ -229,6 +235,7 @@ redefine_keys:
         call key_row
         ld c,20
         call print_str
+        RAM_WORLD
         pop bc
         ret
 
@@ -259,11 +266,13 @@ redefine_keys:
         add a,c                 ; *3 (240 bytes: χωράει σε 8 bits)
         ld e,a
         ld d,0
+        RAM_ENEMIES
         ld hl,key_names
         add hl,de
         ld de,txt_key
         ld bc,3
         ldir
+        RAM_WORLD
         pop bc
         push bc
         ld a,b
@@ -461,8 +470,10 @@ name_entry:
         ld b,8
         ld c,25
         call print_big
+        RAM_ENEMIES
         ld hl,name_lines
         call print_lines
+        RAM_WORLD
         ld hl,(score)
         ld b,7*8
         ld c,35
@@ -584,16 +595,19 @@ level_intro:
         jr nz,.skip
         ret
 
-; Ως το fire ή για LEVEL_WAIT καρέ.
+; Ως το fire (ή το ESC) ή για LEVEL_WAIT καρέ. Με B: για B καρέ.
 ui_wait:
-        call wait_release
         ld b,LEVEL_WAIT
+ui_wait_b:
+        push bc
+        call wait_release
+        pop bc
 .wait:  push bc
         call wait_frame
         call read_input
         pop bc
         ld a,(input_new)
-        and IN_FIRE
+        and IN_FIRE+IN_PAUSE
         ret nz
         djnz .wait
         ret
@@ -635,7 +649,123 @@ level_end:
         ld a,(hl)
         cp LEVEL_COUNT
         jp c,level_start
-        jp game_end             ; και οι 8: το τέλος έρχεται με το M15
+        ld a,mus_ending         ; και οι 8: το τέλος
+        call play_music
+        ld hl,cut_table+2
+        call cut_play
+        ld a,#FF
+        call play_music
+        jp game_end
+
+;------------------------------------------------------------------
+; Σκηνές της ιστορίας (το σενάριο: assets/src/cutscenes.py)
+;------------------------------------------------------------------
+
+; in: HL -> dw στο cut_table (bank 7). Fire: η οθόνη αμέσως και μετά η
+; επόμενη, ESC: τέλος.
+cut_play:
+        ld de,CUT_BUF
+        ld a,#C4
+        call level_load.part
+        xor a
+        ld (cut_skip),a
+        ld hl,CUT_BUF
+.screen:
+        push hl
+        call ui_page
+        pop hl
+        xor a
+        ld (cut_fast),a
+.cmd:   ld a,(hl)
+        inc hl
+        cp #F0
+        jr c,.text
+        cp #FF
+        ret z
+        cp #FE
+        jr z,.wait
+        cp #FD
+        jr z,.big
+        cp #FC
+        jr z,.sprite
+        cp #FB
+        jr z,.sky
+        push hl                 ; #FA: ένα καρέ
+        call .tick
+        pop hl
+        jr .cmd
+.sky:   ld a,(hl)
+        inc hl
+        call set_sky
+        jr .cmd
+.sprite:
+        ld b,(hl)
+        inc hl
+        ld c,(hl)
+        inc hl
+        ld d,(hl)
+        inc hl
+        ld a,(hl)
+        inc hl
+        call blit_masked
+        jr .cmd
+.big:   ld b,(hl)
+        inc hl
+        call .center
+        call print_big
+        inc hl
+        jr .cmd
+.text:  ld b,a
+        call .center
+.char:  ld a,(hl)
+        inc hl
+        or a
+        jr z,.cmd
+        push hl
+        push bc
+        call print_char
+        call .tick
+        pop bc
+        pop hl
+        inc c
+        inc c
+        jr .char
+.wait:  ld a,(cut_skip)
+        or a
+        ret nz
+        push hl
+        ld b,CUT_WAIT
+        call ui_wait_b
+        pop hl
+        ld a,(input_new)
+        and IN_PAUSE
+        jr z,.screen
+        ret
+; C = το x για να κεντραριστεί το κείμενο στο HL
+.center:
+        push hl
+        ld c,40
+.len:   ld a,(hl)
+        inc hl
+        or a
+        jr z,.got
+        dec c
+        jr .len
+.got:   pop hl
+        ret
+; Ένα καρέ, εκτός αν ο παίκτης βιάζεται.
+.tick:  ld a,(cut_fast)
+        or a
+        ret nz
+        call wait_frame
+        call read_input
+        ld a,(input_new)
+        and IN_FIRE+IN_PAUSE
+        ret z
+        ld (cut_fast),a
+        and IN_PAUSE
+        ld (cut_skip),a
+        ret
 
 ;------------------------------------------------------------------
 ; Κοινά
@@ -695,55 +825,6 @@ txt_ready:     db "GET READY!",0
 txt_complete:  db "LEVEL COMPLETE!",0
 txt_antsaved:  db "ANTS",0
 txt_thanks:    db "THE ANTS SAY THANK YOU.",0
-
-title_lines:
-        TROW 4
-        db "THE YEAR IS 2442.",0
-        TROW 5
-        db "THE BEST PILOTS ATE BAD SPACE MOUSSAKA.",0
-        TROW 6
-        db "EARTH NOW DEPENDS ON WING C.",0
-        TROW 8
-        db "THE KATSAROPHOBIANS ARE STEALING",0
-        TROW 9
-        db "ALL THE ANTS. SAVE THEM!",0
-        TROW 12
-        db "1  START         ",0
-        TROW 13
-        db "2  REDEFINE KEYS ",0
-        TROW 14
-        db "3  HIGH SCORES   ",0
-        db #FF
-
-name_lines:
-        TROW 5
-        db "THE ANTS WILL REMEMBER YOU.",0
-        TROW 9
-        db "UP/DOWN: LETTER   FIRE: NEXT",0
-        db #FF
-
-action_names:
-        dw .up,.down,.left,.right,.fire,.weapon,.pause
-.up:    db "UP",0
-.down:  db "DOWN",0
-.left:  db "LEFT",0
-.right: db "RIGHT",0
-.fire:  db "FIRE",0
-.weapon: db "WEAPON",0
-.pause: db "PAUSE",0
-
-; Τα 80 πλήκτρα του CPC (γραμμή*8 + bit), 3 χαρακτήρες το καθένα.
-key_names:
-        db "UP ","RGT","DWN","F9 ","F6 ","F3 ","ENT","F. "      ; 0
-        db "LFT","CPY","F7 ","F8 ","F5 ","F1 ","F2 ","F0 "      ; 1
-        db "CLR","LBR","RET","RBR","F4 ","SHF","BSL","CTL"      ; 2
-        db "HAT","-  ","AT ","P  ","SMC",":  ","/  ",".  "      ; 3
-        db "0  ","9  ","O  ","I  ","L  ","K  ","M  ",",  "      ; 4
-        db "8  ","7  ","U  ","Y  ","H  ","J  ","N  ","SPC"      ; 5
-        db "6  ","5  ","R  ","T  ","G  ","F  ","B  ","V  "      ; 6
-        db "4  ","3  ","E  ","W  ","S  ","D  ","C  ","X  "      ; 7
-        db "1  ","2  ","ESC","Q  ","TAB","A  ","CAP","Z  "      ; 8
-        db "JU ","JD ","JL ","JR ","JF2","JF1","JF3","DEL"      ; 9
 
 ; Ο πίνακας των ρεκόρ (μόνο στη μνήμη: χάνεται στο reset)
 hiscores:

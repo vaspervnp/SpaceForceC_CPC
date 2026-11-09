@@ -352,10 +352,7 @@ hl = <stem>_table + index * 4
 
 Οι πίστες, τα πλακίδια, οι εχθροί ανά πίστα και οι bosses είναι στα `levels.py`, `tilesets.py`, `mobs.py`, `bosses.py`. Μένουν:
 
-* **Οθόνες**: title, intro, cutscenes, ending με τα μυρμήγκια να γράφουν
-  *THANK YOU WING C (YOU ALMOST MESSED IT UP)*. Αυτές είναι ολόκληρες
-  εικόνες 16 KB, όχι sprites — άλλος αγωγός (dithering από φωτογραφία ή
-  render, όπως στο `CPCArt/panigiri`).
+* **Οθόνες σε πλήρη εικόνα**: οι σκηνές (`cutscenes.py`) είναι κείμενο με μικρά sprites· μια ζωγραφιά 16 KB για τον τίτλο ή το τέλος θέλει άλλον αγωγό (dithering από φωτογραφία ή Blender).
 * **Καρέ «χορού Macarena»** για τους εχθρούς που χτυπάει το Disco-Ray. Το
   design document το ζητάει ρητά και είναι το καλύτερο αστείο του παιχνιδιού.
 * **Ο καπνός της εξάτμισης στη Γη** υπάρχει ως sprite αλλά δεν έχει

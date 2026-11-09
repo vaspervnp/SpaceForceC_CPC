@@ -33,6 +33,7 @@ import os
 import random
 
 import bosses
+import cutscenes
 import enemies as EN
 import gfx
 import mobs
@@ -50,7 +51,8 @@ WORLD_H = MAP_H * 8             # 384
 HEADER_MAX = 1024               # #7C00-#7FFF
 LV_PARAMS = 128                 # θέση των παραμέτρων του boss στο header
 LV_SPAWNS = 164                 # θέση της λίστας εχθρών
-STAGE_SIZE = 2048               # src/level.asm
+STAGE_SIZE = 4096               # src/level.asm
+CUT_MAX = 0xC000 - 0x9000       # το σενάριο ανοίγει στο #9000 (CUT_BUF)
 STATUS_LEN = 12                 # χαρακτήρες στη γραμμή μηνυμάτων του HUD
 SHIP_START = (128 - 3, 180)     # (x σε bytes, y), όπως στο main.asm
 SAFE_RADIUS = (40, 80)          # κανένας εχθρός τόσο κοντά στην αφετηρία
@@ -469,6 +471,8 @@ def main():
              '', 'LEVEL_COUNT     equ %d' % len(LEVELS), 'LV_SPAWNS       equ %d' % LV_SPAWNS,
              'LV_PARAMS       equ %d' % LV_PARAMS,
              'MOBS_OFF        equ %d' % mobs_offset(),
+             '', 'cut_table:',
+             '        dw ' + ','.join('cut_%s+#8000' % n for n, _ in cutscenes.SCENES),
              '', 'level_table:']
     blobs = []
     total7 = 0
@@ -528,6 +532,15 @@ def main():
         total6 += len(cb)
         print('εχθροί   %-10s %d -> %d' % (name, MOBS_SIZE, len(cb)))
         out.append('mobset_%s:' % name)
+        out += db_lines(cb)
+    for name, fn in cutscenes.SCENES:
+        raw = fn()
+        assert len(raw) <= CUT_MAX, name
+        cb = compress(raw)
+        assert len(cb) <= STAGE_SIZE, (name, len(cb))
+        total6 += len(cb)
+        print('σκηνή    %-10s %d -> %d' % (name, len(raw), len(cb)))
+        out.append('cut_%s:' % name)
         out += db_lines(cb)
     with open(os.path.join(DATA, 'levels2.asm'), 'w') as f:
         f.write('\n'.join(out) + '\n')

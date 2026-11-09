@@ -37,7 +37,9 @@ BUF_CY          equ 1           ; κάμερα, σειρές
 BUF_NREC        equ 2           ; πόσα sprites ζωγραφίστηκαν
 BUF_RECS        equ 3           ; οι εγγραφές τους (dw)
 BUF_SAVE        equ 5           ; τα σωσμένα bytes (dw)
-BUF_SIZE        equ 7
+BUF_VER         equ 7           ; ο boss στην εγγραφή 0: ποιο boss_ver (#FF = κανένα)
+BUF_KEEP        equ 8           ; πού τελειώνουν τα σωσμένα του (dw)
+BUF_SIZE        equ 10
 
 ; row40[wy] = (wy*40) mod 1024
 make_row40:

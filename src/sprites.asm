@@ -20,7 +20,8 @@
 ; παραλείπεται σε αυτό το καρέ (δεν ξεχειλίζει ποτέ).
 
 SPR_MAX         equ 29
-SPR_FLAGS       equ 0           ; 0 = ελεύθερο
+SPR_FLAGS       equ 0           ; 0 = ελεύθερο, 1 = ενεργό, SPR_BOSS = ο boss
+SPR_BOSS        equ 2           ; πρώτος στη σειρά: όλα τα άλλα από πάνω του
 SPR_X           equ 1           ; world X (bytes)
 SPR_Y           equ 2           ; world Y (γραμμές, 16-bit)
 SPR_GFX         equ 4           ; γραφικό (mask,data), στο #4000-#7FFF
@@ -36,12 +37,22 @@ SAVE_MARGIN     equ 640         ; το μεγαλύτερο sprite (12x48) + κ�
 SAVE_SIZE       equ #780        ; bytes ανά σελίδα
 
 ; Σβήνει τα sprites της σελίδας IX (επαναφέρει το φόντο).
+; Αν ο boss (εγγραφή 0, κάτω από όλα) είναι ίδιος με αυτόν που έχει η σελίδα,
+; μένει εκεί: μόνο όσα είναι από πάνω του σβήνονται και ξαναζωγραφίζονται.
 sprites_restore:
         ld a,(ix+BUF_NREC)
         or a
         ret z
         ld b,a
+        ld c,a
         ld (ix+BUF_NREC),0
+        ld a,(boss_ver)
+        cp (ix+BUF_VER)
+        jr nz,.all
+        ld (ix+BUF_NREC),1
+        dec b
+        ret z
+.all:   ld a,c
         ; τελευταία εγγραφή = recs + (n-1)*REC_SIZE
         ld l,(ix+BUF_RECS)
         ld h,(ix+BUF_RECS+1)
@@ -90,14 +101,28 @@ sprites_draw:
 .spr:   push bc
         ld a,(iy+SPR_FLAGS)
         or a
-        jr z,.next
-        call spr_clip
-        jr c,.next              ; εκτός κάμερας
+        jp z,.next
+        cp SPR_BOSS
+        jr nz,.draw
+        ld a,(boss_ver)
+        cp (ix+BUF_VER)
+        jr nz,.fresh
+        ld hl,(rec_ptr)         ; ίδιος: η εγγραφή και τα σωσμένα του μένουν
+        ld de,REC_SIZE
+        add hl,de
+        ld (rec_ptr),hl
+        ld l,(ix+BUF_KEEP)
+        ld h,(ix+BUF_KEEP+1)
+        ld (save_ptr),hl
+        jp .next
+.fresh: ld (ix+BUF_VER),#FF     ; (αν είναι έξω από την κάμερα, δεν υπάρχει)
+.draw:  call spr_clip
+        jp c,.next              ; εκτός κάμερας
         ld hl,(save_ptr)        ; χωράει το χειρότερο sprite; αλλιώς παράλειψη
         ld de,(save_limit)
         or a
         sbc hl,de
-        jr nc,.next
+        jp nc,.next
         ; εγγραφή: x, y, w, h, σειρές (μετά), πού σώζονται
         ld hl,(rec_ptr)
         ld a,(sp_x)
@@ -132,10 +157,19 @@ sprites_draw:
         ld hl,(rows_ptr)
         ld a,(put_rows)
         ld (hl),a
+        ld a,(iy+SPR_FLAGS)
+        cp SPR_BOSS
+        jp nz,.next
+        ld a,(boss_ver)
+        ld (ix+BUF_VER),a
+        ld hl,(save_ptr)
+        ld (ix+BUF_KEEP),l
+        ld (ix+BUF_KEEP+1),h
 .next:  ld de,SPR_SIZE
         add iy,de
         pop bc
-        djnz .spr
+        dec b
+        jp nz,.spr
         RAM_WORLD
         ret
 
