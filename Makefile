@@ -9,6 +9,8 @@
 #   make test       headless CPC (~/cpcemu): σενάρια κίνησης, late frames,
 #                   έλεγχος της οθόνης κελί-κελί
 #   make sound      headless: οι registers του AY -> build/sound_*.wav
+#   make video      headless: βίντεο 2 λεπτών με bot -> build/SpaceForceC.mp4
+#   make manual     docs/manual-en, manual-el: md -> pdf
 #   make assets     ξαναπαράγει τα assets/data από τα assets/src
 #   make clean
 #
@@ -37,7 +39,7 @@ ASSET_DATA := $(wildcard assets/data/*.asm)
 RASMFLAGS := -I src $(if $(PROFILE),-DPROFILE=1) $(if $(START),-DSTART_LEVEL=$(START)) $(if $(BOSS),-DBOSS_NOW=1)
 FLAGS_STAMP := $(BUILD)/flags
 
-.PHONY: all snap run run-snap run-cpcemu shot test sound assets clean FORCE
+.PHONY: all snap run run-snap run-cpcemu shot test video manual sound assets clean FORCE
 
 all: $(DSK)
 
@@ -78,6 +80,12 @@ test: $(DSK)
 
 run-cpcemu: $(DSK)
 	tools/cpcemu.sh $(DSK)
+
+video: $(DSK)
+	$(PYTHON) tools/make_video.py
+
+manual:
+	$(PYTHON) tools/mkmanual.py
 
 sound: $(DSK)
 	$(PYTHON) tools/sound_wav.py

@@ -12,6 +12,8 @@ Arcade multi-directional scrolling shooter για τον **Amstrad CPC 6128** σ
 
 ## Πώς παίζεται
 
+Το πλήρες εγχειρίδιο: [ελληνικά](docs/manual-el.md) ([PDF](docs/manual-el.pdf)), [English](docs/manual-en.md) ([PDF](docs/manual-en.pdf)).
+
 Στον CPC ή σε emulator, με τη δισκέτα `SpaceForceC.dsk`:
 
 ```
