@@ -340,6 +340,33 @@ def energy_flow(c, s):
     return good and full
 
 
+def splash_flow(s):
+    """Το REVIVE8B.SCR στην οθόνη με τα χρώματά του· το SPACE το προσπερνά."""
+    art = open(os.path.join(ROOT, "assets/revive8b.scr"), "rb").read()
+    c = CPC()
+    c.run_frames(150)
+    c.insert_disc(DSK)
+    c.type_text('RUN"DISC\n')
+    wait = 0
+    while bytes(c.read_ram(0xC000, len(art))) != art and wait < 1500:
+        c.run_frames(10)
+        wait += 10
+    shown = wait < 1500
+    c.run_frames(10)
+    c.screenshot(os.path.join(ROOT, "build/test_splash.png"))
+    c.key_down(ord(" "))
+    c.run_frames(10)
+    c.key_up(ord(" "))
+    n = 0
+    while c.peek(s["music_now"]) != 1 and n < 1500:
+        c.run_frames(10)
+        n += 10
+    good = shown and n < 1500
+    print("οθόνη REVIVE8BIT: στη μνήμη μετά από %d καρέ, SPACE -> τίτλος σε %d καρέ: %s"
+          % (wait, n, "OK" if good else "ΛΑΘΟΣ"))
+    return good
+
+
 def difficulty_flow(s):
     """Το πλήκτρο 4 στον τίτλο: 10, 5 ή 2 χτυπήματα ανά ζωή."""
     good = True
@@ -440,6 +467,7 @@ def main():
     ok = game_over_flow(c, s) and ok
     ok = energy_flow(c, s) and ok
     ok = difficulty_flow(s) and ok
+    ok = splash_flow(s) and ok
     sys.exit(0 if ok else 1)
 
 

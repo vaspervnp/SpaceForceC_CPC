@@ -26,26 +26,12 @@ NAME_REPEAT     equ 8           ; καρέ πριν αρχίσει η επανά
 title_screen:
         ld a,mus_title
         call play_music
-        call ui_page
-        ld hl,txt_title
-        ld b,8
-        ld c,27
-        call print_big
+        ld hl,cut_table+4       ; η εικόνα (assets/src/cutscenes.py)
+        call cut_play
         RAM_ENEMIES
         ld hl,title_lines
         call print_lines
         RAM_WORLD
-        ; διακόσμηση: το σκάφος αριστερά, ένας διοικητής δεξιά
-        ld hl,ship_gfx+ship_space_ne*SHIP_SZ
-        ld b,4
-        ld c,10
-        ld d,SHIP_H
-        ld a,SHIP_W
-        call blit_masked
-        ld a,en_roach0
-        ld b,8
-        ld c,62
-        call blit_enemy
         call hud_title
         call draw_difficulty
         call wait_release
@@ -106,7 +92,7 @@ draw_difficulty:
         ld d,0
         ld hl,txt_difficulty
         add hl,de
-        ld b,15*8
+        ld b,16*8
         ld c,51
         jp print_str
 
@@ -156,33 +142,6 @@ hud_title:
         RAM_WORLD
         ld a,TITLE_PAGE
         jp text_to_page
-
-; Εχθρός A (καρέ του enemies.asm, bank 5) στη σελίδα: B = γραμμή, C = x
-blit_enemy:
-        push bc
-        add a,a
-        add a,a
-        ld e,a
-        ld d,0
-        RAM_ENEMIES
-        ld hl,enemies_table
-        add hl,de
-        ld a,(hl)               ; πλάτος
-        inc hl
-        ld d,(hl)               ; ύψος
-        inc hl
-        push af
-        ld a,(hl)
-        inc hl
-        ld h,(hl)
-        ld l,a
-        ld bc,enemies_gfx
-        add hl,bc
-        pop af
-        pop bc
-        call blit_masked
-        RAM_WORLD
-        ret
 
 ;------------------------------------------------------------------
 ; Redefine keys
@@ -842,7 +801,6 @@ print_lines:
         jr nz,.skip
         jr print_lines
 
-txt_title:     db "SPACE FORCE C",0
 txt_redefine:  db "REDEFINE KEYS",0
 txt_hiscores:  db "HIGH SCORES",0
 txt_newhi:     db "NEW HIGH SCORE!",0

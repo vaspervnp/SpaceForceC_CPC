@@ -2,23 +2,13 @@
 ; κύρια μνήμη είναι για ό,τι χρειάζεται την ώρα του παιχνιδιού.
 
 title_lines:
-        TROW 4
-        db "THE YEAR IS 2442.",0
-        TROW 5
-        db "THE BEST PILOTS ATE BAD SPACE MOUSSAKA.",0
-        TROW 6
-        db "EARTH NOW DEPENDS ON WING C.",0
-        TROW 8
-        db "THE KATSAROPHOBIANS ARE STEALING",0
-        TROW 9
-        db "ALL THE ANTS. SAVE THEM!",0
-        TROW 12
-        db "1  START         ",0
         TROW 13
-        db "2  REDEFINE KEYS ",0
+        db "1  START         ",0
         TROW 14
-        db "3  HIGH SCORES   ",0
+        db "2  REDEFINE KEYS ",0
         TROW 15
+        db "3  HIGH SCORES   ",0
+        TROW 16
         db "4  DIFFICULTY    ",0
         db #FF
 

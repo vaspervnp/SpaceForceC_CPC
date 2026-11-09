@@ -27,6 +27,7 @@ BUILD    := build
 DSK      := $(BUILD)/SpaceForceC.dsk
 SNA      := $(BUILD)/sfc.sna
 LOADER   := $(BUILD)/disc.bas
+REVIVE   := assets/revive8b.scr
 
 SRC      := $(wildcard src/*.asm)
 ASSET_PY := $(wildcard assets/src/*.py)
@@ -42,13 +43,17 @@ all: $(DSK)
 
 # Το rasm γράφει το SFC.BIN και το GFX4.BIN σε νέα EDSK· το iDSK προσθέτει
 # τον loader (που κρατάει το Extended format) και ελέγχουμε το header στο
-# τέλος. Ο loader φορτώνει το GFX4.BIN στο bank 4 (OUT &7F00,&C4), το
+# τέλος. Ο loader δείχνει πρώτα την οθόνη του REVIVE8BIT (REVIVE8B.SCR, με τα
+# χρώματα του assets/revive8b.txt) για 10 s ή ως το SPACE, όπως τα άλλα
+# παιχνίδια. Μετά φορτώνει το GFX4.BIN στο bank 4 (OUT &7F00,&C4), το
 # GFX5.BIN στο 5, τον ήχο (SND6.BIN) στο 6 και τις πίστες (LEVELS.BIN) στο 7.
-$(DSK): $(SRC) $(ASSET_DATA) $(FLAGS_STAMP) Makefile
+$(DSK): $(SRC) $(ASSET_DATA) $(REVIVE) $(FLAGS_STAMP) Makefile
 	rm -f $@
 	$(RASM) $(RASMFLAGS) src/main.asm -o $(BUILD)/sfc -s -sq -os $(BUILD)/sfc.sym
-	printf '10 MODE 1:BORDER 0:INK 0,0:INK 1,26:LOCATE 14,11:PRINT"SPACE FORCE C":LOCATE 15,13:PRINT"LOADING..."\r\n20 MEMORY &3FFF:OUT &7F00,&C4:LOAD"GFX4.BIN":OUT &7F00,&C5:LOAD"GFX5.BIN":OUT &7F00,&C6:LOAD"SND6.BIN":OUT &7F00,&C7:LOAD"LEVELS.BIN":OUT &7F00,&C0:RUN"SFC.BIN"\r\n' > $(LOADER)
+	printf '10 MEMORY &3FFF:BORDER 0:MODE 0:FOR I=0 TO 15:INK I,0:NEXT:LOAD"REVIVE8B.SCR",&C000\r\n20 INK 0,0:INK 1,13:INK 2,26:INK 3,15:INK 4,25:INK 5,10:INK 6,3:INK 7,1:INK 8,11:INK 9,23:INK 10,6:INK 11,24:INK 12,20:INK 13,16:INK 14,12:INK 15,4\r\n30 T=TIME+3000\r\n40 IF INKEY(47)=-1 AND TIME<T THEN 40\r\n50 MODE 1:BORDER 0:INK 0,0:INK 1,26:LOCATE 14,11:PRINT"SPACE FORCE C":LOCATE 15,13:PRINT"LOADING..."\r\n60 OUT &7F00,&C4:LOAD"GFX4.BIN":OUT &7F00,&C5:LOAD"GFX5.BIN":OUT &7F00,&C6:LOAD"SND6.BIN":OUT &7F00,&C7:LOAD"LEVELS.BIN":OUT &7F00,&C0:RUN"SFC.BIN"\r\n' > $(LOADER)
 	$(IDSK) $@ -i $(LOADER) -t 0 > /dev/null 2>&1
+	cp $(REVIVE) $(BUILD)/REVIVE8B.SCR
+	$(IDSK) $@ -i $(BUILD)/REVIVE8B.SCR -t 1 -c C000 -f > /dev/null 2>&1
 	@head -c 21 $@ | grep -q 'EXTENDED CPC DSK File' || { echo "$@: δεν είναι Extended DSK"; exit 1; }
 	@$(IDSK) $@ -l 2>/dev/null | grep -E '^[A-Z0-9 ]{8}\.'
 

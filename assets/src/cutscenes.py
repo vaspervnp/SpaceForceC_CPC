@@ -15,12 +15,17 @@
 Το μήνυμα των μυρμηγκιών είναι γράμματα της γραμματοσειράς σε διπλό μέγεθος,
 φτιαγμένα από κουκκίδες-μυρμήγκια, που μπαίνουν ανά στήλη: σχηματίζεται αργά.
 """
+import random
+
+import boss1
 import enemies as EN
 import font as FO
+import fx as FX
 import gfx
-import mobs
+import junk
 import pickups as PU
 import ship as SP
+import shots as SH
 from gfx import PEN, art, blank, stamp
 
 FONT = dict(FO.sheet())
@@ -272,4 +277,101 @@ def ending():
     return s.end()
 
 
-SCENES = [('intro', intro), ('ending', ending)]
+# ------------------------------------------------------------------ τίτλος
+
+LOGO_SCALE = 3
+LOGO_RAMP = 'IIIyyyyyDDDDDDrrrrrddddd'      # από πάνω προς τα κάτω, 8 x 3 γραμμές
+
+
+def logo(text):
+    """Το όνομα σε τριπλό μέγεθος, με διαβάθμιση και σκιά."""
+    w, h = len(text) * 4 * LOGO_SCALE + 2, 8 * LOGO_SCALE + 1
+    img = blank(w, h, None)
+    for shadow in (True, False):
+        for k, ch in enumerate(text):
+            g = FONT[ch]
+            for y in range(8):
+                for x in range(4):
+                    if g[y][x] in (None, 0):
+                        continue
+                    for yy in range(LOGO_SCALE):
+                        for xx in range(LOGO_SCALE):
+                            py = y * LOGO_SCALE + yy
+                            px = (k * 4 + x) * LOGO_SCALE + xx
+                            if shadow:
+                                img[py + 1][px + 1] = PEN['K']
+                            else:
+                                img[py][px] = PEN[LOGO_RAMP[py]]
+    return img
+
+
+def planet(rx, ry, rows, paint):
+    """Το πάνω κομμάτι ενός δίσκου· paint(x, y) -> χαρακτήρας pen."""
+    img = blank(2 * rx, rows, None)
+    for y in range(rows):
+        for x in range(2 * rx):
+            dx, dy = (x + 0.5 - rx) / rx, (y + 0.5 - ry) / ry
+            d = dx * dx + dy * dy
+            if d <= 1.0:
+                img[y][x] = PEN['K' if d > 0.9 else paint(x, y)]
+    return img
+
+
+def earth():
+    rnd = random.Random(2442)
+    land = [(rnd.randrange(36), rnd.randrange(44), rnd.randrange(3, 7)) for _ in range(9)]
+
+    def paint(x, y):
+        for lx, ly, r in land:
+            if abs(x - lx) * 2 + abs(y - ly) < r * 2:
+                return 'n' if (x + y) % 5 == 0 else 'g'
+        if (x * 3 + y * 7) % 41 < 2:
+            return 'I'
+        return 'b'
+    return planet(18, 36, 36, paint)
+
+
+def moon():
+    craters = ((4, 8), (9, 14), (5, 20), (10, 5))
+
+    def paint(x, y):
+        for cx, cy in craters:
+            if abs(x - cx) * 2 + abs(y - cy) < 4:
+                return 'K' if (x + y) % 2 else 'i'
+        return 'I' if x < 5 else 'i'
+    return planet(7, 14, 28, paint)
+
+
+def title():
+    """Μόνο γραφικά: τα κείμενα του μενού τα γράφει το title_screen από πάνω."""
+    s = Script()
+    rnd = random.Random(442)
+    for _ in range(60):
+        star = blank(2, 1 + rnd.randrange(2), None)
+        for row in star:
+            row[rnd.randrange(2)] = PEN[rnd.choice('IIIyci')]
+        y, x = rnd.randrange(166), rnd.randrange(79)
+        if not (100 <= y <= 160 and 16 <= x <= 66):     # όχι δίπλα στα κείμενα
+            s.sprite(star, y, x)
+    s.sprite(earth(), 132, 0)
+    s.sprite(moon(), 128, 68)
+    s.sprite(logo('SPACE FORCE C'), 6, 1)
+    # η μάχη: το σκάφος, η Flying Patates, εναντίον του Lord Garbage-Can
+    s.sprite(FX.flame('e', 0), 58, 3)
+    s.sprite(SP.frame('e'), 50, 7)
+    for x in (16, 23):
+        s.sprite(SH.shot('disco', 'e', 0), 58, x)
+    s.sprite(EN.frames('grunt')[0], 38, 30)
+    s.sprite(EN.frames('grunt')[1], 38, 38)
+    s.sprite(EN.frames('saucer')[0], 74, 28)
+    s.sprite(EN.frames('sock')[0], 56, 42)
+    s.sprite(EN.frames('mine')[0], 80, 44)
+    s.sprite(boss1.frame(1), 40, 66)
+    for k, y in zip(range(3), (42, 58, 74)):
+        s.sprite(junk.frame(k), y, 58 - k * 3)
+    for k, (x, y) in enumerate(((12, 40), (20, 80), (34, 58), (50, 90), (24, 92))):
+        s.sprite(PU.ant(k % 2), y, x)
+    return s.b + [0xFF]
+
+
+SCENES = [('intro', intro), ('ending', ending), ('title', title)]
