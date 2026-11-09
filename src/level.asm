@@ -52,7 +52,11 @@ level_load:
         call make_halftiles     ; από τα νέα πλακίδια
         ld a,(LEVEL_HDR+LV_WORLD)
         ld (ship_world),a
+        ifdef BOSS_NOW          ; make BOSS=1: κατευθείαν ο boss, για δοκιμή
+        xor a
+        else
         ld a,(LEVEL_HDR+LV_COUNT)
+        endif
         ld (spawn_left),a
         ld hl,LEVEL_HDR+LV_SPAWNS
         ld (spawn_ptr),hl

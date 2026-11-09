@@ -6,28 +6,28 @@ Arcade multi-directional scrolling shooter για τον **Amstrad CPC 6128** σ
 
 ## Κατάσταση
 
-Έχουν γίνει το M0 (build pipeline), το M2 (engine core), το M3
-(multi-directional scrolling), το M4 (sprite engine), το M5 (το σκάφος), το
-M6 (τα όπλα), το M7 (οι εχθροί και τα όπλα τους), το M8 (power-ups),
-το M9 (HUD, τίτλος, redefine keys, high scores), το M10 (μουσική και
-ηχητικά εφέ στο AY), το M11 (8 πίστες, συμπιεσμένες στο bank 7, με οθόνες
-μετάβασης), το M12 (η πίστα 1 ολόκληρη, με τον boss Lord Garbage-Can), το
-M13 (οι πίστες 2-4 με τους bosses τους), το M14 (οι πίστες 5-8 της Γης) και το
-M15 (η ιστορία: εισαγωγή, τέλος, credits).
-Το παιχνίδι παίζεται ολόκληρο, από την εισαγωγή ως τα credits, 8 πίστες με 8 bosses.
-Το demo οδηγεί το σκάφος, με αδράνεια και φλόγα εξάτμισης, σε χάρτη 4x2
-οθονών με hardware scroll, στα 25 FPS με double buffering, με HUD σε split
-screen και 10 εχθρούς με δική τους συμπεριφορά: σχηματισμοί, κύκλοι,
-κυνηγητό, νάρκες. Ρίχνουν Laser Spaghetti (επιβραδύνει), έντυπα Ε9 (κολλάνε
-στο παρμπρίζ) και τορπίλες που κάνουν zigzag. 3 ζωές, και τα μυρμήγκια που
-αφήνουν οι εχθροί σώζονται αν τα αγγίξεις. Πέφτουν και power-ups: Bubble
-Wrap, Espresso, Ant-Magnet, Engine, Insecticide, όπλα, ζωή. Τρία όπλα: το Disco-Ray
-βάζει τους εχθρούς να χορεύουν Macarena πριν σκάσουν, η μπαγκέτα τους
-διαπερνάει, το φτάρνισμα ψεκάζει (με ανάκρουση). Στη Γη το σκάφος αφήνει
-καπνό· στις απότομες στροφές οι πιλότοι ουρλιάζουν.
-Στον τίτλο: 1 / Fire = παιχνίδι, 2 = redefine keys, 3 = high scores.
-Χειρισμός: κέρσορες / joystick, Space / Fire = βολή, W = όπλο, ESC = παύση
-(όλα αλλάζουν από το redefine). Για δοκιμή: E = διάστημα/Γη.
+**Το παιχνίδι παίζεται ολόκληρο**: εισαγωγή, 8 πίστες με 8 bosses, τέλος, credits και πίνακας ρεκόρ, με μουσική και ηχητικά εφέ στο AY. Τρέχει σε CPC 6128, και σε 464/664 με 128K (ελεγμένο στο Caprice32, όχι ακόμα σε πραγματικό CPC).
+
+Στις μάχες με τους bosses ο ρυθμός πέφτει ως τα ~23 FPS. Στις πίστες μένει σταθερά στα 25. Δες το [todo.md](todo.md).
+
+## Πώς παίζεται
+
+Στον CPC ή σε emulator, με τη δισκέτα `SpaceForceC.dsk`:
+
+```
+RUN"DISC
+```
+
+| πλήκτρο | ενέργεια |
+|---|---|
+| κέρσορες / joystick | κίνηση σε 8 κατευθύνσεις, με αδράνεια |
+| Space / Fire | βολή |
+| W | επόμενο όπλο (Disco-Ray, Mega-Baguette, Sneeze Cannon) |
+| ESC | παύση (στις σκηνές: τις προσπερνά) |
+
+Στον τίτλο: 1 ή Fire = παιχνίδι, 2 = αλλαγή πλήκτρων, 3 = ρεκόρ.
+
+Μάζεψε τα μυρμήγκια και τα power-ups που αφήνουν οι εχθροί. Κάθε 15.000 πόντοι δίνουν μια ζωή. Όταν τελειώσουν οι εχθροί μιας πίστας, έρχεται ο boss της.
 
 - [design_document.md](design_document.md): το game design document
 - [todo.md](todo.md): τα milestones της ανάπτυξης
@@ -36,15 +36,12 @@ Wrap, Espresso, Ant-Magnet, Engine, Insecticide, όπλα, ζωή. Τρία όπ
 
 ## Γραφικά
 
-19,7 KB σε Mode 0: το σκάφος (8 κατευθύνσεις × 2 κόσμοι), 6 εχθροί, 6 όπλα,
-9 power-ups, εκρήξεις, 16 πλακίδια φόντου, ο Lord Garbage-Can και
-γραμματοσειρά HUD. Όλα παράγονται από ASCII — δες
-[assets/README.md](assets/README.md).
+Όλα σε Mode 0, και όλα παράγονται από κώδικα ή ASCII: το σκάφος (8 κατευθύνσεις × 2 κόσμοι), 6 εχθροί και 2 ανά πίστα, 8 bosses, 7 σετ πλακιδίων, όπλα, power-ups, εκρήξεις, οι σκηνές της ιστορίας. Δες το [assets/README.md](assets/README.md).
 
 ![Level 1](assets/preview/screen.png)
 
 ```bash
-python3 assets/src/make_assets.py
+make assets
 ```
 
 Δύο ευρήματα από την τέχνη που αλλάζουν το σχέδιο της μηχανής:
@@ -78,10 +75,15 @@ make
 | `make snap` / `make run-snap` | snapshot (`build/sfc.sna`) που ξεκινάει κατευθείαν |
 | `make shot` | Caprice32 χωρίς παράθυρο, γράφει `build/screenshot.png` |
 | `make sound` | headless: οι registers του AY γίνονται `build/sound_*.wav` (τίτλος, παιχνίδι, game over) |
-| `make START=n` | το παιχνίδι ξεκινάει από την πίστα n, για δοκιμές (μετά ξανά `make` για κανονικό) |
+| `make START=n` | το παιχνίδι ξεκινάει από την πίστα n, χωρίς την εισαγωγή (μετά ξανά `make` για κανονικό) |
+| `make START=n BOSS=1` | κατευθείαν ο boss της πίστας n |
 | `make test` | headless CPC (`~/cpcemu`): σενάρια κίνησης, χρόνος καρέ, έλεγχος οθόνης κελί-κελί (`CRTC=0/1/2` για τύπο CRTC) |
 | `make run-cpcemu` | CPCEMU 2.5 για Linux (`CPCEMU_TGZ=` το tarball από το cpc-emu.org) |
-| `make PROFILE=1 ...` | raster bars στο border: ο χρόνος κάθε φάσης του καρέ |
+| `make PROFILE=1 ...` | raster bars στο border, μετρητής αργών καρέ στο HUD, E = διάστημα/Γη |
 | `make assets` | ξαναπαράγει τα `assets/data` από τα `assets/src` |
 
 Το Caprice32 είναι το snap package. Καλείται μέσω του `tools/cap32.sh`, γιατί ο `caprice32.launcher` πετάει τις επιλογές της γραμμής εντολών.
+
+## Credits
+
+REVIVE8BIT - 2026 - VASPER. Κώδικας και γραφικά με το Claude. Για τον Amstrad CPC, με [rasm](https://github.com/EdouardBerge/rasm) και [iDSK](https://github.com/cpcsdk/idsk).

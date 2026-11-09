@@ -251,7 +251,7 @@ def boss_flow(c, s):
     c.screenshot(os.path.join(ROOT, "build/test_boss_boom.png"))
     c.run_frames(350)               # εκρήξεις, χρόνος για τα μυρμήγκια
     c.screenshot(os.path.join(ROOT, "build/test_complete.png"))
-    good = good and word(c, s["score"]) >= 5000
+    good = good and word(c, s["score"]) >= 2000
     print("   σκορ %d %s" % (word(c, s["score"]), "OK" if good else "ΛΑΘΟΣ"))
     return good
 
@@ -276,6 +276,8 @@ def whole_game(c, s):
             c.poke(s["score"] + 1, 64000 >> 8)
         good = boss_flow(c, s) and good
     capped = word(c, s["score"]) == 65535
+    print("έξτρα ζωή στα 15000: ζωές %d %s" % (c.peek(s["lives"]), "OK" if c.peek(s["lives"]) > 3 else "ΛΑΘΟΣ"))
+    good = good and c.peek(s["lives"]) > 3
     print("σκορ στο όριο: %d %s" % (word(c, s["score"]), "OK" if capped else "ΛΑΘΟΣ"))
     good = good and capped
     # μετά τον τελευταίο: Level Complete -> ιστορία -> όνομα -> πίνακας -> τίτλος

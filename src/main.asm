@@ -87,6 +87,8 @@ game_start:
         xor a
         endif
         ld (level),a
+        ld hl,LIFE_EVERY
+        ld (next_life),hl
         ifndef START_LEVEL
         ld hl,cut_table         ; η ιστορία
         call cut_play
@@ -120,14 +122,15 @@ main_loop:
         call flip               ; παύση: ίδια εικόνα, δείξε την άλλη σελίδα
         jr main_loop
 .run:
+        ifdef PROFILE           ; E: διάστημα <-> Γη, για δοκιμές
         ld a,(input_new)
         and IN_WORLD
         jr z,.noworld
         ld a,(ship_world)
         xor SHIP_WORLD_EARTH
         ld (ship_world),a
-        call world_music
 .noworld:
+        endif
         call move_ship
         call update_weapons
         call update_camera
@@ -185,6 +188,7 @@ main_loop:
         call draw_hud_game
         RAM_WORLD
 .noscore:
+        ifdef PROFILE           ; ο μετρητής των αργών καρέ
         ld a,(frames)
         and 15
         jr nz,.nohud
@@ -192,6 +196,7 @@ main_loop:
         call draw_hud
         RAM_WORLD
 .nohud:
+        endif
 
         PROFILE_BORDER HW_BLACK         ; αναμονή για το VSYNC
         call flip
@@ -269,15 +274,6 @@ game_init:
         ld (vbl_count),a
         ret
 
-; Η μουσική του κόσμου: διάστημα ή Γη.
-world_music:
-        ld a,(ship_world)
-        or a
-        ld a,mus_space
-        jr z,$+4
-        ld a,mus_earth
-        jp play_music
-
 ; in: A = σελίδα
 init_page:
         ld (draw_page),a
@@ -316,6 +312,7 @@ draw_hud_static:
         ld b,16
         ld c,18
         call print_str
+        ifdef PROFILE
         ld hl,txt_late
         ld b,16
         ld c,40
@@ -326,6 +323,9 @@ draw_hud:
         ld b,16
         ld c,50
         jp print_u16
+        else
+        ret
+        endif
 
 ; Σκορ και όπλο: μόνο όταν αλλάξουν (hud_dirty).
 draw_hud_game:
@@ -372,7 +372,9 @@ txt_paused: db "PAUSED",0
 txt_score:  db "SCORE",0
 txt_lives:  db "LIVES",0
 txt_ants:   db "ANTS",0
+        ifdef PROFILE
 txt_late:   db "LATE",0
+        endif
 
 ; out: IX -> κατάσταση της σελίδας που ζωγραφίζουμε
 page_buf:
@@ -559,6 +561,7 @@ int_idx:     db #80
 game_r12:    db #20
 game_r13:    db 0
 level:       db 0               ; 0-7
+next_life:   dw LIFE_EVERY      ; το σκορ της επόμενης ζωής (items.asm)
 cut_fast:    db 0               ; ui.asm: οι σκηνές
 cut_skip:    db 0
 snd_ticks:   db 0               ; ήχος (hw.asm, sound.asm)

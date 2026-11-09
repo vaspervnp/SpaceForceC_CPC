@@ -20,6 +20,7 @@ ITEM_LIFE       equ 250                 ; 10 s
 ITEM_SCORE      equ 25
 ANT_SCORE       equ 50
 POWER_TIME      equ 250                 ; 10 s για τα προσωρινά
+LIFE_EVERY      equ 15000
 MAGNET_SPEED    equ 1                   ; bytes/καρέ (y: x4)
 
 IT_ANT          equ 0
@@ -306,15 +307,35 @@ apply_item:
 .score: call add_score
         jr .dirty
 
-; Σκορ += DE. Σταματάει στο 65535: ένα καλό παιχνίδι ξεπερνά τα 16 bits, και
-; το γύρισμα στο 0 θα έχανε το ρεκόρ.
+; Σκορ += DE, ως το 65535. Ανά LIFE_EVERY πόντους, μία ζωή ακόμα.
 add_score:
         ld hl,(score)
         add hl,de
         jr nc,.ok
         ld hl,#FFFF
 .ok:    ld (score),hl
-        ret
+        ld de,(next_life)
+        ld a,d
+        and e
+        inc a
+        ret z                   ; (#FFFF: τελείωσαν)
+        or a
+        sbc hl,de
+        ret c
+        ld hl,LIFE_EVERY
+        add hl,de
+        jr nc,.next
+        ld hl,#FFFF
+.next:  ld (next_life),hl
+        ld a,(lives)
+        cp 9
+        ret nc
+        inc a
+        ld (lives),a
+        ld a,sfx_pickup
+        call play_sfx
+        ld hl,txt_life
+        jp set_status
 
 ; Το Bubble Wrap απορροφά ένα χτύπημα. out: CF = 1 αν το απορρόφησε.
 use_shield:

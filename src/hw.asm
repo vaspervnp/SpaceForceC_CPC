@@ -332,8 +332,9 @@ key_bindings:
         db 5,%10000000,IN_FIRE          ; Space
         db 7,%00001000,IN_WEAPON        ; W
         db 8,%00000100,IN_PAUSE         ; ESC
-        ; E: διάστημα/Γη (δοκιμή)
-        db 7,%00000100,IN_WORLD
+        ifdef PROFILE
+        db 7,%00000100,IN_WORLD         ; E: διάστημα/Γη (δοκιμή)
+        endif
         ; joystick 0: και τα δύο κουμπιά = fire (τα joysticks με ένα κουμπί
         ; δεν δίνουν όλα το ίδιο bit· το όπλο αλλάζει με το W)
         db 9,%00000001,IN_UP

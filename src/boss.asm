@@ -27,7 +27,7 @@ BOSS_WARN       equ 25
 BOSS_TOP        equ 8           ; γραμμές από την κορυφή της οθόνης
 BOSS_BOTTOM     equ VIEW_H*8-BOSS_H-8   ; ως εκεί στην κάθοδο
 BOSS_BOOM_TIME  equ 75
-BOSS_SCORE      equ 5000
+BOSS_SCORE      equ 2000
 BAR_Y           equ 0           ; η πάνω γραμμή του HUD είναι ελεύθερη
 BAR_LABEL_X     equ 0
 BAR_X           equ 10          ; ως 15 κελιά

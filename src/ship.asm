@@ -299,6 +299,9 @@ update_ship_sprites:
         ld (iy+SPR_FLAGS),1
 
 .smoke: ; --- καπνός: μόνο στη Γη, από την ουρά, κάθε SMOKE_EVERY καρέ
+        ld a,(boss_on)          ; (όχι στη μάχη: εκεί μετράει κάθε sprite)
+        or a
+        jr nz,.age
         ld a,(ship_world)
         or a
         jr z,.age
@@ -325,6 +328,7 @@ update_ship_sprites:
         add a,a
         add a,a
         add a,a
+        add a,c                 ; *9 = SPR_SIZE
         ld e,a
         ld d,0
         ld ix,spr_table+SMOKE_SLOT*SPR_SIZE

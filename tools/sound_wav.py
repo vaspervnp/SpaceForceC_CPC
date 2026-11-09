@@ -93,7 +93,7 @@ def main():
         c.joystick(0)
         c.tap_key('w')
         record(c, 10, game)
-    c.tap_key('e')                      # Γη
+    c.poke(s["music_req"], 3)           # η μουσική της Γης (mus_earth)
     record(c, 50 * 6, game)
     render(game, os.path.join(h.ROOT, 'build/sound_game.wav'))
     over = []

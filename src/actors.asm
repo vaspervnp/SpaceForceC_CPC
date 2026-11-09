@@ -42,7 +42,7 @@ BOOM_TIME       equ 9           ; 3 καρέ έκρηξης x 3
 DEAD_TIME       equ 75          ; 3 s ως τον επόμενο της λίστας
 SPAWN_RETRY     equ 10          ; ο επόμενος θα έβγαινε μέσα στην κάμερα
 SPAWN_SIZE      equ 7           ; x, 0, y (dw), vx, vy, kind
-KILL_SCORE      equ 100
+KILL_SCORE      equ 50
 BANK_ENEMIES    equ #C5
 
 ; Ανά τύπο (kind/2): κίνηση, όπλο, αντοχή, μυρμήγκια, ρυθμός βολής (καρέ)
@@ -481,7 +481,12 @@ enemy_gun:
         inc hl
         inc hl
         inc hl
-        ld a,(hl)               ; KI_COOL
+        ld b,(hl)               ; KI_COOL, μείον 4 καρέ ανά πίστα: η δυσκολία
+        ld a,(level)
+        add a,a
+        add a,a
+        neg
+        add a,b
         ld (ix+EN_COOL),a
         call on_camera
         ret c
