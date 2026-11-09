@@ -164,6 +164,7 @@ boss_update:
         ld a,(BP_RAGE_AT)
         cp (ix+EN_HP)
         jr c,.calm
+        call boss_bonus
         ld hl,BP_RAGE_COOL
 .calm:  ld a,(hl)
         ld (ix+EN_COOL),a
@@ -398,6 +399,11 @@ draw_boss_bar:
         rrca
         and 15
         ld hl,boss_cells
+        ld c,BAR_X
+        ld b,BAR_Y
+; Ένα κελί μιας μπάρας προς την τιμή A, το πολύ ανά καρέ. Σε RAM_HUD.
+; in: HL -> τα κελιά που φαίνονται τώρα, B = γραμμή, C = x
+bar_step:
         cp (hl)
         ret z
         ld e,'*'
@@ -409,10 +415,39 @@ draw_boss_bar:
 .grow:  ld a,(hl)
         inc (hl)
 .cell:  add a,a
-        add a,BAR_X
+        add a,c
         ld c,a
         ld a,e
-        ld b,BAR_Y
         jp print_char
+
+; Η μπάρα της ενέργειας.
+draw_energy:
+        ld a,(energy)
+        ld hl,energy_cells
+        ld c,ENERGY_X
+        ld b,16
+        jr bar_step
+
+; Μία φορά ανά μάχη, στη μισή αντοχή: μια μπαταρία κάτω από τον boss, αφού
+; εδώ δεν υπάρχουν εχθροί για να την αφήσουν.
+boss_bonus:
+        ld a,(boss_drop)
+        or a
+        ret nz
+        inc a
+        ld (boss_drop),a
+        ld l,(iy+SPR_Y)
+        ld h,(iy+SPR_Y+1)
+        push hl
+        ld de,BOSS_H+8
+        add hl,de
+        ld (iy+SPR_Y),l
+        ld (iy+SPR_Y+1),h
+        ld a,IT_ENERGY
+        call spawn_item
+        pop hl
+        ld (iy+SPR_Y),l
+        ld (iy+SPR_Y+1),h
+        ret
 
 txt_boss:   db "BOSS",0

@@ -174,6 +174,14 @@ main_loop:
         call update_status
         RAM_WORLD
 .nostatus:
+        ld a,(energy)
+        ld hl,energy_cells
+        cp (hl)
+        jr z,.noenergy
+        RAM_HUD
+        call draw_energy
+        RAM_WORLD
+.noenergy:
         ld a,(boss_on)
         or a
         jr z,.nobar
@@ -208,6 +216,8 @@ main_loop:
 ; παίκτης από πίστα σε πίστα), καθαρά sprites/βλήματα, η πίστα από το bank
 ; 7, η οθόνη της μετάβασης, HUD, και οι δύο σελίδες ζωγραφισμένες.
 game_init:
+        ld a,(energy)           ; (από πίστα σε πίστα)
+        push af
         ld hl,(score)
         push hl
         ld hl,(ants_saved)
@@ -240,6 +250,8 @@ game_init:
         ld (ants_saved),hl
         pop hl
         ld (score),hl
+        pop af
+        ld (energy),a
         ld hl,spr_table         ; sprites, εχθροί, βλήματα: όλα ελεύθερα
         ld de,spr_table+1
         ld bc,recs0-spr_table-1
@@ -312,19 +324,23 @@ draw_hud_static:
         ld b,16
         ld c,18
         call print_str
-        ifdef PROFILE
-        ld hl,txt_late
+        ld hl,txt_energy_h
         ld b,16
-        ld c,40
+        ld c,42
+        ifdef PROFILE
+        call print_str
+        ld hl,txt_late
+        ld b,0
+        ld c,44
         jp print_str
 
 draw_hud:
         ld hl,(late_frames)
-        ld b,16
-        ld c,50
+        ld b,0
+        ld c,54
         jp print_u16
         else
-        ret
+        jp print_str
         endif
 
 ; Σκορ και όπλο: μόνο όταν αλλάξουν (hud_dirty).
@@ -372,6 +388,7 @@ txt_paused: db "PAUSED",0
 txt_score:  db "SCORE",0
 txt_lives:  db "LIVES",0
 txt_ants:   db "ANTS",0
+txt_energy_h: db "ENERGY",0
         ifdef PROFILE
 txt_late:   db "LATE",0
         endif
@@ -546,6 +563,9 @@ boss_dir:    db 0
 boss_fan:    db 0
 boss_ptr:    dw 0
 boss_ver:    db 0               ; αλλάζει όταν αλλάξει η εικόνα του boss
+boss_drop:   db 0               ; η μπαταρία της μάχης δόθηκε
+energy:      db ENERGY_MAX      ; hazards.asm
+energy_cells: db 0              ; όσα κελιά φαίνονται στο HUD
 frames:      dw 0
 late_frames: dw 0
 game_vars_end:

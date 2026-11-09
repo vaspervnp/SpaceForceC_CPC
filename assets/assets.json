@@ -1100,8 +1100,8 @@
  },
  "pickups": {
   "title": "power-ups και μυρμήγκια",
-  "frames": 20,
-  "bytes": 2432,
+  "frames": 22,
+  "bytes": 2688,
   "fixed_size": null,
   "items": [
    {
@@ -1294,6 +1294,28 @@
    {
     "label": "pu_life_hi",
     "what": "Extra life, λάμψη",
+    "w": 8,
+    "h": 16,
+    "masked": true,
+    "screen_units": [
+     16,
+     16
+    ]
+   },
+   {
+    "label": "pu_energy",
+    "what": "Energy — μπαταρία: γεμίζει ξανά την ενέργεια",
+    "w": 8,
+    "h": 16,
+    "masked": true,
+    "screen_units": [
+     16,
+     16
+    ]
+   },
+   {
+    "label": "pu_energy_hi",
+    "what": "Energy, λάμψη",
     "w": 8,
     "h": 16,
     "masked": true,
@@ -2427,5 +2449,5 @@
   "pixels_per_byte": 2,
   "move_2px": "κίνηση ανά 2 pixel = 1 byte, άρα ΟΛΑ τα blits είναι byte-aligned και δεν χρειάζονται προ-μετατοπισμένα αντίγραφα"
  },
- "_total_bytes": 19344
+ "_total_bytes": 19600
 }

@@ -198,6 +198,25 @@ KDSSSSDK
 """
 
 # κλειδί, όνομα, τέχνη, τι κάνει
+ENERGY = """
+...KK...
+...ii...
+.KKKKKK.
+KIIIIIIK
+KiiiiiiK
+KggggggK
+KggyyggK
+KggyyggK
+KggggggK
+KgyyyygK
+KgyyyygK
+KggggggK
+KnnnnnnK
+KnnnnnnK
+.KKKKKK.
+........
+"""
+
 PICKUPS = [
     ('shield',   'Shield Bubble Wrap', SHIELD,
      'ασπίδα· σπάει με «ποπ»'),
@@ -217,6 +236,8 @@ PICKUPS = [
      'αυτόματος ψεκαστήρας εναντίον των μυρμηγκο-εχθρών'),
     ('life',     'Extra life',         LIFE,
      'μία ζωή ακόμα για το Wing C'),
+    ('energy',   'Energy',             ENERGY,
+     'μπαταρία: γεμίζει ξανά την ενέργεια'),
 ]
 
 # Το καρέ λάμψης: μόνο το περίγραμμα αλλάζει.

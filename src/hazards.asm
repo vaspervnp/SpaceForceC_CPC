@@ -6,8 +6,9 @@
 ;   Bad Breath Torpedo zigzag γύρω από την πορεία της· κοστίζει ζωή
 ;   επαφή με εχθρό     κοστίζει ζωή, και ο εχθρός σκάει
 ;
-; Μετά από ζημιά, 2 s άτρωτο (το σκάφος αναβοσβήνει). Με 0 ζωές: GAME OVER
-; για 3 s και μετά ο πίνακας ρεκόρ. Το Bubble Wrap (items.asm) απορροφά ένα
+; Κάθε χτύπημα κοστίζει 1 από τα ENERGY_MAX της ενέργειας και 1 s άτρωτο (το
+; σκάφος αναβοσβήνει). Με 0 ενέργεια: χάνεται ζωή, 2 s άτρωτο και ξανά γεμάτη
+; ενέργεια. Με 0 ζωές: GAME OVER για 3 s και μετά ο πίνακας ρεκόρ. Το Bubble Wrap (items.asm) απορροφά ένα
 ; χτύπημα.
 
 GUN_NONE        equ 0
@@ -31,7 +32,10 @@ ES_SIZE         equ 6
 ESHOT_LIFE      equ 60
 STICK_TIME      equ 50          ; 2 s
 SLOW_TIME       equ 75          ; 3 s
-INVULN_TIME     equ 50          ; 2 s
+INVULN_TIME     equ 50          ; 2 s, μετά από χαμένη ζωή
+INVULN_HIT      equ 25          ; 1 s, μετά από χτύπημα
+ENERGY_MAX      equ 10          ; χτυπήματα ανά ζωή
+ENERGY_X        equ 56          ; η μπάρα στο HUD (γραμμή 16), 10 κελιά
 GAMEOVER_TIME   equ 75
 START_LIVES     equ 3
 
@@ -375,16 +379,25 @@ ship_hit:
         ret nz
         call use_shield
         ret c
-        ld a,INVULN_TIME
+        ld a,sfx_hit
+        call play_sfx
+        ld a,INVULN_HIT
+        ld (invuln),a
+        ld hl,energy
+        dec (hl)
+        jr z,.life
+        ld hl,txt_ouch
+        jp set_status
+.life:  ld a,INVULN_TIME
         ld (invuln),a
         ld a,1
         ld (hud_dirty),a
         ld hl,lives
         dec (hl)
         jr z,.over
-        ld a,sfx_hit
-        call play_sfx
-        ld hl,txt_ouch
+        ld a,ENERGY_MAX
+        ld (energy),a
+        ld hl,txt_lifelost
         jp set_status
 .over:  ld a,mus_gameover
         call play_music
@@ -485,5 +498,6 @@ update_status:
 txt_pasta:    db "SPAGHETTI!  ",0
 txt_e9:       db "E9 TAX FORM!",0
 txt_ouch:     db "OUCH!       ",0
+txt_lifelost: db "LIFE LOST!  ",0
 txt_gameover: db "GAME OVER   ",0
 txt_clear:    db "             ",0       ; 13: όσο το μεγαλύτερο όνομα όπλου

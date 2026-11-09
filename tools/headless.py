@@ -307,6 +307,39 @@ def whole_game(c, s):
     return good and won and check_level(c, s, 1)
 
 
+def energy_flow(c, s):
+    """10 χτυπήματα ανά ζωή, από πραγματικά βλήματα, και η μπαταρία τη γεμίζει."""
+    fire(c)                         # πίνακας -> τίτλος
+    c.run_frames(30)
+    start_game(c, s)
+    c.run_frames(30)
+    clear_enemies(c, s)             # ο boss ρίχνει, το σκάφος δεν κουνιέται
+    seen, lives0, n = [], c.peek(s["lives"]), 0
+    while c.peek(s["lives"]) == lives0 and n < 30000:
+        c.run_frames(1)
+        n += 1
+        e = c.peek(s["energy"])
+        if not seen or seen[-1] != e:
+            seen.append(e)
+    good = c.peek(s["lives"]) == lives0 - 1 and c.peek(s["energy"]) == 10 \
+        and seen[:10] == list(range(10, 0, -1))
+    print("ενέργεια: %s, ζωές %d -> %d %s"
+          % (seen[:11], lives0, c.peek(s["lives"]), "OK" if good else "ΛΑΘΟΣ"))
+    c.poke(s["energy"], 3)          # μια μπαταρία πάνω στο σκάφος
+    c.poke(s["invuln"], 250)
+    b = s["spr_table"] + 24 * 9
+    c.poke(b + 1, c.peek(s["ship_x"]) + 1)
+    c.poke(b + 2, c.peek(s["ship_y"]))
+    c.poke(b + 3, c.peek(s["ship_y"] + 1))
+    c.poke(s["item_timer"], 100)
+    c.poke(s["item_type"], 10)      # IT_ENERGY
+    c.run_frames(10)
+    full = c.peek(s["energy"]) == 10
+    print("μπαταρία: ενέργεια %d %s" % (c.peek(s["energy"]), "OK" if full else "ΛΑΘΟΣ"))
+    c.screenshot(os.path.join(ROOT, "build/test_energy.png"))
+    return good and full
+
+
 def game_over_flow(c, s):
     """Game over με ρεκόρ: όνομα (UP x2 = C), πίνακας, πίσω στον τίτλο."""
     c.poke(s["score"], 6000 & 255)
@@ -369,6 +402,7 @@ def main():
     print("σύνολο: %d καρέ, %d άργησαν" % (word(c, s["frames"]), late))
     ok = ok_level and whole_game(c, s) and ok
     ok = game_over_flow(c, s) and ok
+    ok = energy_flow(c, s) and ok
     sys.exit(0 if ok else 1)
 
 

@@ -13,6 +13,7 @@
 ;   όπλο          αυτό το όπλο· αν το έχεις ήδη, η μπαγκέτα ανεβαίνει επίπεδο
 ;   Insecticide   10 s: αυτόματος ψεκασμός σε κύκλο (weapons.asm)
 ;   Extra life    +1 ζωή
+;   Energy        γεμίζει την ενέργεια (hazards.asm)
 
 ITEM_N          equ 3
 ITEM_SLOT       equ ESHOT_SLOT+ESHOT_N  ; 24-26
@@ -33,17 +34,19 @@ IT_BAGUETTE     equ 6
 IT_SNEEZE       equ 7
 IT_SPRAY        equ 8
 IT_LIFE         equ 9
+IT_ENERGY       equ 10
 
 ; Πρώτο καρέ ανά τύπο (+1 = λάμψη, ή ant1)
 item_frame:
         db ant0,pu_shield,pu_espresso,pu_magnet,pu_engine
-        db pu_disco,pu_baguette,pu_sneeze,pu_spray,pu_life
+        db pu_disco,pu_baguette,pu_sneeze,pu_spray,pu_life,pu_energy
 
-; Ποιο power-up: rand & 15 -> τύπος (η ζωή σπάνια)
+; Ποιο power-up: rand & 15 -> τύπος (η ζωή σπάνια, η ενέργεια συχνή)
 drop_table:
-        db IT_SHIELD,IT_SHIELD,IT_ESPRESSO,IT_ESPRESSO,IT_MAGNET,IT_MAGNET
-        db IT_ENGINE,IT_DISCO,IT_DISCO,IT_BAGUETTE,IT_BAGUETTE,IT_BAGUETTE
-        db IT_SNEEZE,IT_SNEEZE,IT_SPRAY,IT_LIFE
+        db IT_ENERGY,IT_ENERGY,IT_ENERGY,IT_ENERGY,IT_ENERGY
+        db IT_SHIELD,IT_SHIELD,IT_ESPRESSO,IT_MAGNET
+        db IT_ENGINE,IT_DISCO,IT_BAGUETTE,IT_BAGUETTE
+        db IT_SNEEZE,IT_SPRAY,IT_LIFE
 
 ; Ο εχθρός IX σκάει στη θέση του sprite IY: A μυρμήγκια + ίσως power-up.
 drop_items:
@@ -59,7 +62,7 @@ drop_items:
         cp en_roach0            ; ο διοικητής αφήνει πάντα
         jr z,.always
         call rand
-        and 7
+        and 3                   ; 1 στους 4
         ret nz
 .always:
         call rand
@@ -240,19 +243,19 @@ apply_item:
         ld a,1
         ld (shield),a
         ld hl,txt_shield
-        jr .msg
+        jp .msg
 .esp:   cp IT_ESPRESSO
         jr nz,.mag
         ld a,POWER_TIME
         ld (espresso),a
         ld hl,txt_espresso
-        jr .msg
+        jp .msg
 .mag:   cp IT_MAGNET
         jr nz,.eng
         ld a,POWER_TIME
         ld (magnet),a
         ld hl,txt_magnet
-        jr .msg
+        jp .msg
 .eng:   cp IT_ENGINE
         jr nz,.spr
         ld a,(engine)
@@ -261,14 +264,20 @@ apply_item:
         inc a
         ld (engine),a
         ld hl,txt_engine
-        jr .msg
+        jp .msg
 .spr:   cp IT_SPRAY
         jr nz,.life
         ld a,POWER_TIME
         ld (spray),a
         ld hl,txt_spray
-        jr .msg
-.life:  cp IT_LIFE
+        jp .msg
+.life:  cp IT_ENERGY
+        jr nz,.xlife
+        ld a,ENERGY_MAX
+        ld (energy),a
+        ld hl,txt_energy
+        jp .msg
+.xlife: cp IT_LIFE
         jr nz,.weapon
         ld a,(lives)
         cp 9
@@ -276,7 +285,7 @@ apply_item:
         inc a
         ld (lives),a
         ld hl,txt_life
-        jr .msg
+        jp .msg
 .weapon:                        ; IT_DISCO / IT_BAGUETTE / IT_SNEEZE
         sub IT_DISCO            ; -> WP_DISCO / WP_BAGUETTE / WP_SNEEZE
         ld hl,weapon
@@ -388,5 +397,6 @@ txt_magnet:   db "ANT-MAGNET! ",0
 txt_engine:   db "ENGINE UP!  ",0
 txt_spray:    db "INSECTICIDE!",0
 txt_life:     db "EXTRA LIFE! ",0
+txt_energy:   db "ENERGY FULL!",0
 txt_pop:      db "POP!        ",0
 txt_none:     db 0
